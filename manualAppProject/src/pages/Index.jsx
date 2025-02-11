@@ -1,8 +1,8 @@
 import React from "react";
 import { Link } from 'react-router-dom';
-import tvattmTrumma from "../assets/img/tvattmTrumma.jpg";
-import plockaDiskm from "../assets/img/plockaDiskm.jpg";
-import letaKylskap from "../assets/img/letaKylskap.jpg";
+import tvattmTrumma from "../assets/img/orangeTvatt.jpg";
+import plockaDiskm from "../assets/img/front_dishw.gif";
+import letaKylskap from "../assets/img/PappaKylsk.jpeg";
 
 
 export default function Index() {

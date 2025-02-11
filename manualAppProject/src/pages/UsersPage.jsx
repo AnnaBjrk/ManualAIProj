@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import cuteRoundRob from "../assets/img/cuteRoundRob2.gif";
+import cuteRob from "../assets/img/diskmPersp.jpg";
 
 export default function UsersPage() {
     const [firstName, setFirstName] = useState('');
@@ -24,7 +24,7 @@ export default function UsersPage() {
             <div className="flex justify-left mb-8">
                 <img
                     className="h-64 w-auto object-contain"
-                    src={cuteRoundRob}
+                    src={cuteRob}
                     alt="söt robot"
                 />
             </div>
