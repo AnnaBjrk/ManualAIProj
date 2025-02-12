@@ -10,6 +10,7 @@ load_dotenv(override=True)
 
 DATABASE = os.getenv("DATABASE")
 PASSWORD = os.getenv("PASSWORD")
+POSTGRES_USER = os.getenv("POSTGRES_USER")
 
 
 def get_connection():
@@ -21,9 +22,9 @@ def get_connection():
     """
     return psycopg2.connect(
         dbname=DATABASE,
-        user="postgres",  # change if needed
+        user=POSTGRES_USER,  # change if needed
         password=PASSWORD,
-        host="localhost",  # change if needed
+        host="db",  # change if needed
         port="5432",  # change if needed
     )
 

@@ -1,15 +1,16 @@
 import React from "react";
 import { Link } from 'react-router-dom';
 import tvattmTrumma from "../assets/img/orangeTvatt.jpg";
-import plockaDiskm from "../assets/img/front_dishw.gif";
-import letaKylskap from "../assets/img/PappaKylsk.jpeg";
+import plockaDiskm from "../assets/img/diskmPerspRed.jpg";
+import letaKylskap from "../assets/img/kylskPlock.jpg";
+import litenRobBla from "../assets/img/liten_tecknad_robot_bla.jpeg";
 
 
 export default function Index() {
     return (
         <div className="font-['Roboto']">
             <section className="m-5 p-8 bg-cover bg-center text-amber-50 text-right text-wrap rounded-lg"
-                style={{ backgroundImage: "url('./src/assets/img/liten_tecknad_robot_bla.gif')" }}>
+                style={{ backgroundImage: `url(${litenRobBla})` }}>
                 <h1 className="text-5xl font-roboto mb-4">Manual Assistant <br /> din hjälp när <br />hemmatekniken strular
                 </h1>
                 <p className="text-lg font-roboto"> Hitta enkelt din manual och ta AI till hjälp för att lösa ditt problem.</p>
