@@ -112,6 +112,8 @@ export default function RegisterForm({ onLoginSuccess }) {
                         password,
                         terms_of_agreement: terms,
                     }),
+                    mode: 'cors',           // Added för att kringå browserns motstånd mot mina SSL certifikat
+                    credentials: 'include'  // Added för att kringå browserns motstånd mot mina SSL certifikat
                 });
 
                 const errorData = await response.json();

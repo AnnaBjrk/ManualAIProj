@@ -1,4 +1,4 @@
-import react from "../assets/react.svg";
+import gizmo from "../assets/gizmo.svg";
 import { Link } from 'react-router-dom';
 // import { Sidebar } from "../components/Sidebar";
 import React, { useState } from "react";
@@ -10,11 +10,11 @@ export default function Header({ onMenuClick, user }) {
     return (
         <header className="font-['Roboto']">
             <nav>
-                <div className="flex flex-row items-center h-28 bg-sky-800  text-amber-50">
-                    <ul className="flex flex-row flex-1 gap-6 p-4">
+                <div className="flex flex-row items-center h-24 bg-sky-800  text-amber-50">
+                    <ul className="flex flex-row flex-1 gap-6 p-4 pt-8">
                         <li>
                             <Link to="/">
-                                <img className="Manual Assistant logo" src={react} alt="Manual Assistant logo" />
+                                <img className="manual-assistant-logo h-16 w-auto" src={gizmo} alt="Manual Assistant logo" />
                             </Link>
                         </li>
                         <li>
