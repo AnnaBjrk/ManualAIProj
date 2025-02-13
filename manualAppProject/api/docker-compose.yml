@@ -1,3 +1,4 @@
+#nginx version utan SSL referens
 version: '3.8'
 services:
   db:
@@ -30,11 +31,8 @@ services:
       - db
     ports:
       - "8000:8000"
-    volumes:
-      - /etc/ssl/certs/cert.pem:/app/cert.pem
-      - /etc/ssl/private/key.pem:/app/key.pem
     command: >
-      sh -c "sleep 10 && python setup.py && uvicorn main:app --host 0.0.0.0 --port 443 --ssl-keyfile=/app/key.pem --ssl-certfile=/app/cert.pem"
+      sh -c "sleep 10 && python setup.py && uvicorn main:app --host 0.0.0.0 --port 8000"
 
 volumes:
   postgres_data:

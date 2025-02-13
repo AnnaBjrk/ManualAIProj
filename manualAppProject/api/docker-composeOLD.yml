@@ -1,0 +1,46 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:16
+    container_name: postgres_db_man
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${PASSWORD}
+      POSTGRES_DB: ${DATABASE}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/dbmanualweb
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ManualApi_app
+    environment:
+      POSTGRES_USER: ${USER}
+      POSTGRES_PASSWORD: ${PASSWORD}
+      POSTGRES_DB: ${DATABASE}
+      HOST: db
+    env_file:
+      - .env
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    volumes:
+      - /etc/letsencrypt/live/gizmobuddy.online/fullchain.pem:/app/fullchain.pem
+      - /etc/letsencrypt/live/gizmobuddy.online/privkey.pem:/app/privkey.pem
+      #   volumes:
+      # - /etc/ssl/certs/cert.pem:/app/cert.pem
+      # - /etc/ssl/private/key.pem:/app/key.pem
+
+    command: >
+      sh -c "sleep 10 && python setup.py && uvicorn main:app --host 0.0.0.0 --port 8000 --ssl-keyfile=/app/privkey.pem --ssl-certfile=/app/fullchain.pem"
+    # sh -c "sleep 10 && python setup.py && uvicorn main:app --host 0.0.0.0 --port 8000 --ssl-keyfile=/app/key.pem --ssl-certfile=/app/cert.pem"
+volumes:
+  postgres_data:
+
+    #kör på port 443 just nu - kräver att man kör docker compose med sudo, nu tillbaka på 8000 med nginx

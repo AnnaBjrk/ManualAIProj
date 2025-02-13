@@ -10,6 +10,7 @@ from schemas import LoginForm
 from setup import get_connection
 import psycopg2.errorcodes
 
+
 app = FastAPI()
 
 
@@ -17,6 +18,7 @@ origins = [
     "http://localhost:3000",  # React app URL
     "http://localhost:8000",  # FastAPI app URL
     "http://localhost:5173",  # FastAPI app URL
+    "https://jib.nu"                   #URL to EC2
 ]
 
 app.add_middleware(
