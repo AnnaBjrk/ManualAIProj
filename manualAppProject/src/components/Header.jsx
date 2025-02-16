@@ -8,33 +8,35 @@ export default function Header({ onMenuClick, user }) {
     // const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     return (
-        <header className="font-['Roboto']">
+        <header className="font-['Neucha']">
             <nav>
-                <div className="flex flex-row items-center h-24 bg-sky-800  text-amber-50">
-                    <ul className="flex flex-row flex-1 gap-6 p-4 pt-8">
+                <div className="flex flex-row items-center h-20 border-b border-b-4 border-b-amber-50 border-double bg-sky-900  text-amber-50">
+                    <ul className="flex flex-row items-center flex-1 gap-6 p-4">
                         <li>
-                            <Link to="/">
-                                <img className="manual-assistant-logo h-16 w-auto" src={gizmo} alt="Manual Assistant logo" />
-                            </Link>
+                            <div className="">
+                                <Link to="/">
+                                    <img className="manual-assistant-logo h-12 w-auto" src={gizmo} alt="Manual Assistant logo" />
+                                </Link>
+                            </div>
                         </li>
                         <li>
-                            <Link to="/query" className="px-4 text-lg font-roboto text-amber-50">
+                            <Link to="/query" className="px-4 text-base font-['Neucha'] text-amber-50">
                                 Fråga AI
                             </Link>
                         </li>
                         <li>
-                            <Link to="/manual" className="px-4 text-lg font-roboto text-amber-50">
+                            <Link to="/manual" className="px-4 text-base font-['Neucha'] text-amber-50">
                                 Sök efter en manual
                             </Link>
                         </li>
                         <li>
-                            <Link to="/about" className="px-4 text-lg font-roboto text-amber-50">
-                                Om Manual Assistant
+                            <Link to="/about" className="px-4 text-base font-['Neucha'] text-amber-50">
+                                Våra partners
                             </Link>
                         </li>
                         <div> {user ? (
                             <li>
-                                <Link to="/userspage" className="px-4 text-lg font-roboto text-amber-50">
+                                <Link to="/userspage" className="px-4 text-base font-['Neucha'] text-amber-50">
                                     Min sida
                                 </Link>
                             </li>
@@ -50,7 +52,7 @@ export default function Header({ onMenuClick, user }) {
                     </div>
                     <div className="pr-4">
                         <button onClick={onMenuClick} className="p-2 text-amber-50 hover:text-amber-300 transition-colors">
-                            <CircleUserRound size={30} />
+                            <CircleUserRound strokeWidth={1.5} size={30} />
                         </button>
                     </div>
                 </div>

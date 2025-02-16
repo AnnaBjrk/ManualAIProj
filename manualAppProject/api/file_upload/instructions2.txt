@@ -1,0 +1,150 @@
+This code would typically be implemented in your FastAPI backend project. Let me explain the typical project structure and where each piece would go:
+
+```
+your_project/
+├── app/
+│   ├── __init__.py
+│   ├── main.py           # Main FastAPI application
+│   ├── routers/
+│   │   ├── __init__.py
+│   │   └── uploads.py    # Upload-related routes go here
+│   ├── models/
+│   │   ├── __init__.py
+│   │   └── uploads.py    # FileUpload model definition
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── config.py     # Settings class
+│   │   └── security.py   # Token verification, OAuth2
+│   └── database.py       # Database connection, get_db
+└── requirements.txt
+```
+
+Here's how you would split up this code:
+
+1. In `app/core/config.py`:
+```python
+from pydantic_settings import BaseSettings
+
+class Settings(BaseSettings):
+    AWS_ACCESS_KEY: str
+    AWS_SECRET_KEY: str
+    AWS_REGION: str
+    S3_BUCKET: str
+    
+    class Config:
+        env_file = ".env"
+
+settings = Settings()
+```
+
+2. In `app/database.py`:
+```python
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.ext.declarative import declarative_base
+
+SQLALCHEMY_DATABASE_URL = "postgresql://user:password@localhost/dbname"
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+SessionLocal = sessionmaker(engine)
+Base = declarative_base()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+```
+
+3. In `app/models/uploads.py`:
+```python
+from sqlalchemy import Column, String, DateTime, ForeignKey
+from sqlalchemy.sql import func
+from ..database import Base
+
+class FileUpload(Base):
+    __tablename__ = "file_uploads"
+    # ... (the model definition we discussed earlier)
+```
+
+4. In `app/routers/uploads.py`:
+```python
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
+from boto3.session import Session as AWSSession
+from botocore.config import Config
+import boto3
+import uuid
+from datetime import datetime
+
+from ..core.config import settings
+from ..database import get_db
+from ..models.uploads import FileUpload
+
+router = APIRouter()
+
+# AWS Configuration
+aws_session = AWSSession()
+s3_client = aws_session.client(
+    's3',
+    config=Config(signature_version='s3v4'),
+    region_name=settings.AWS_REGION,
+    aws_access_key_id=settings.AWS_ACCESS_KEY,
+    aws_secret_access_key=settings.AWS_SECRET_KEY
+)
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+@router.post("/api/get-upload-url")
+async def get_upload_url(...):
+    # ... (the endpoint implementation)
+
+@router.post("/api/confirm-upload")
+async def confirm_upload(...):
+    # ... (the endpoint implementation)
+```
+
+5. In `app/main.py`:
+```python
+from fastapi import FastAPI
+from .routers import uploads
+
+app = FastAPI()
+
+app.include_router(uploads.router)
+```
+
+To run this, you'll need these dependencies in your `requirements.txt`:
+```
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+python-jose[cryptography]  # for JWT tokens
+boto3
+python-multipart
+```
+
+And you'll need environment variables (in `.env`):
+```
+AWS_ACCESS_KEY=your_access_key
+AWS_SECRET_KEY=your_secret_key
+AWS_REGION=your_region
+S3_BUCKET=your_bucket_name
+```
+
+Run the application with:
+```bash
+uvicorn app.main:app --reload
+```
+
+This structure follows FastAPI best practices by:
+1. Separating concerns (routes, models, config)
+2. Using dependency injection for database sessions
+3. Organizing AWS configuration
+4. Protecting routes with OAuth2
+5. Making settings configurable via environment variables
+
+Would you like me to explain any specific part of this structure in more detail?

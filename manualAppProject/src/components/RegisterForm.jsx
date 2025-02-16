@@ -167,19 +167,19 @@ export default function RegisterForm({ onLoginSuccess }) {
         <>
             <div className="flex flex-col justify-center flex-1 min-h-full px-6 py-12 lg:px-8">
                 <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-                    <h1 className="mt-10 text-5xl font-bold tracking-tight text-center text-gray-900">
-                        Register an account
+                    <h1 className="mt-5 text-3xl font-['Neucha'] tracking-tight text-center text-gray-900">
+                        Skapa ett konto
                     </h1>
                 </div>
 
-                <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+                <div className="mt-5 sm:mx-auto sm:w-full sm:max-w-sm">
                     <form onSubmit={submitRegister} className="space-y-6" noValidate>
                         <div>
                             <label
                                 htmlFor="firstName"
-                                className="block text-sm font-medium leading-6 text-gray-900"
+                                className="block text-sm font-['Barlow_Condensed'] font-medium leading-6 text-gray-900"
                             >
-                                * First name
+                                Förnamn
                             </label>
                             <div className="mt-2">
                                 <input
@@ -203,9 +203,9 @@ export default function RegisterForm({ onLoginSuccess }) {
                         <div>
                             <label
                                 htmlFor="lastName"
-                                className="block text-sm font-medium leading-6 text-gray-900"
+                                className="block text-sm font-['Barlow_Condensed'] font-medium leading-6 text-gray-900"
                             >
-                                * Last name
+                                Efternamn
                             </label>
                             <div className="mt-2">
                                 <input
@@ -232,9 +232,9 @@ export default function RegisterForm({ onLoginSuccess }) {
                         <div>
                             <label
                                 htmlFor="email"
-                                className="block text-sm font-medium leading-6 text-gray-900"
+                                className="block text-sm font-['Barlow_Condensed'] font-medium leading-6 text-gray-900"
                             >
-                                * Email address
+                                Mejl
                             </label>
                             <div className="mt-2">
                                 <input
@@ -259,18 +259,18 @@ export default function RegisterForm({ onLoginSuccess }) {
                             <div className="flex items-center justify-between">
                                 <label
                                     htmlFor="password"
-                                    className="block text-sm font-medium leading-6 text-gray-900"
+                                    className="block text-sm font-['Barlow_Condensed'] font-medium leading-6 text-gray-900"
                                 >
-                                    * Password
+                                    Lösenord
                                 </label>
-                                <div className="text-sm">
-                                    <a
+                                {/* <div className="text-sm"> */}
+                                {/* <a
                                         href="#"
                                         className="font-semibold text-indigo-600 hover:text-indigo-500"
                                     >
                                         Forgot password?
                                     </a>
-                                </div>
+                                </div> */}
                             </div>
                             <div className="mt-2">
                                 <input
@@ -296,9 +296,9 @@ export default function RegisterForm({ onLoginSuccess }) {
                             <div className="items-center justify-between mr-4">
                                 <label
                                     htmlFor="terms"
-                                    className="block text-sm font-medium leading-6 text-gray-900"
+                                    className="block text-sm font-['Barlow_Condensed'] font-medium leading-6 text-gray-900"
                                 >
-                                    Terms of agreement
+                                    Användarvillkor
                                 </label>
                             </div>
                             <div>
@@ -316,9 +316,9 @@ export default function RegisterForm({ onLoginSuccess }) {
                         <div>
                             <button
                                 type="submit"
-                                className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                                className="flex w-full justify-center font-['Neucha'] rounded-md bg-amber-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-amber-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-900"
                             >
-                                Submit
+                                Skicka
                             </button>
                         </div>
                         {serverError && (

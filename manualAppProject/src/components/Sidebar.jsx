@@ -18,7 +18,7 @@ export default function Sidebar({ isOpen, onClose, onLogin, onLogout, user }) {
 
   return (
     <div
-      className={`fixed inset-y-0 right-0 w-96 bg-amber-50 shadow-lg transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'
+      className={`fixed inset-y-0 right-0 w-96 h-auto bg-amber-50 shadow-lg transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
     >
       <div className="p-4">
@@ -35,16 +35,16 @@ export default function Sidebar({ isOpen, onClose, onLogin, onLogout, user }) {
           {user ? (
             <div className="flex flex-col items-center space-y-6">
               <div className="text-center">
-                <h2 className="text-xl font-semibold text-gray-800">
+                <h2 className="text-xl font-['Barlow_Condensed'] font-semibold text-gray-800">
                   Välkommen, {user.firstName}!
                 </h2>
-                <p className="mt-2 text-gray-600">
+                <p className="mt-2 text-gray-600 font-['Barlow_Condensed']">
                   Du är nu inloggad. Sök och ställ frågor om dina tekniska prylar.
                 </p>
               </div>
               <button
                 onClick={handleLogout}
-                className="px-6 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700 transition-colors"
+                className="px-6 py-2 font-['Neucha'] bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors"
               >
                 Logga ut
               </button>
@@ -54,21 +54,21 @@ export default function Sidebar({ isOpen, onClose, onLogin, onLogout, user }) {
               <div className="flex justify-center space-x-4 mb-6">
                 <button
                   onClick={() => setShowLogin(false)}
-                  className={`px-4 py-2 rounded-md transition-colors ${!showLogin
-                    ? 'bg-sky-600 text-white'
-                    : 'bg-transparent text-sky-600 hover:bg-sky-50'
+                  className={`px-4 py-2 font-['Neucha'] rounded-md transition-colors ${!showLogin
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-transparent text-amber-800 hover:bg-amber-7000'
                     }`}
                 >
-                  Register
+                  Bli medlem
                 </button>
                 <button
                   onClick={() => setShowLogin(true)}
-                  className={`px-4 py-2 rounded-md transition-colors ${showLogin
-                    ? 'bg-sky-600 text-white'
-                    : 'bg-transparent text-sky-600 hover:bg-sky-50'
+                  className={`px-4 py-2 font-['Neucha'] rounded-md transition-colors ${showLogin
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-transparent text-amber-800 hover:bg-amber-700'
                     }`}
                 >
-                  Login
+                  Logga in
                 </button>
               </div>
 

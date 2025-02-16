@@ -1,0 +1,103 @@
+To set up S3 for this file upload system, you need to configure several things:
+
+1. **Create an S3 Bucket**:
+```bash
+aws s3 mb s3://your-bucket-name
+```
+
+2. **CORS Configuration** - Essential for allowing direct browser uploads:
+```json
+{
+    "CORSRules": [
+        {
+            "AllowedOrigins": ["http://localhost:3000", "https://your-domain.com"],
+            "AllowedMethods": ["GET", "PUT", "POST", "HEAD"],
+            "AllowedHeaders": ["*"],
+            "ExposeHeaders": ["ETag"],
+            "MaxAgeSeconds": 3000
+        }
+    ]
+}
+```
+Save this as `cors.json` and apply it:
+```bash
+aws s3api put-bucket-cors --bucket your-bucket-name --cors-configuration file://cors.json
+```
+
+3. **Bucket Policy** - Set appropriate access controls:
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowPresignedUrlUploads",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::your-account-id:root"
+            },
+            "Action": [
+                "s3:PutObject",
+                "s3:GetObject"
+            ],
+            "Resource": "arn:aws:s3:::your-bucket-name/*"
+        }
+    ]
+}
+```
+
+4. **IAM User/Role** - Create an IAM user with these permissions:
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:HeadObject",
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::your-bucket-name",
+                "arn:aws:s3:::your-bucket-name/*"
+            ]
+        }
+    ]
+}
+```
+
+5. **Lifecycle Rules** (Optional) - For managing file retention:
+```json
+{
+    "Rules": [
+        {
+            "ID": "Delete old files",
+            "Status": "Enabled",
+            "Filter": {
+                "Prefix": "uploads/"
+            },
+            "Expiration": {
+                "Days": 30
+            }
+        }
+    ]
+}
+```
+
+6. **Environment Variables** - Make sure these are set in your backend:
+```
+AWS_ACCESS_KEY=your-iam-user-access-key
+AWS_SECRET_KEY=your-iam-user-secret-key
+AWS_REGION=your-region (e.g., us-east-1)
+S3_BUCKET=your-bucket-name
+```
+
+Important Security Considerations:
+- Enable server-side encryption if needed
+- Set up proper bucket versioning if required
+- Consider using VPC endpoints for S3 access
+- Use minimal IAM permissions
+- Set up proper bucket logging
+
+Would you like me to explain any of these configurations in more detail?

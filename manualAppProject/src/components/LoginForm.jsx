@@ -81,10 +81,10 @@ const LoginForm = ({ onLoginSuccess }) => {
 
     return (
         <div className="p-4">
-            <h2 className="text-2xl font-bold mb-4 text-amber-950">Login</h2>
+            <h2 className="flex justify-center text-3xl font-['Neucha'] font-bold mb-4 text-amber-950">Logga in</h2>
             <form className="space-y-4" onSubmit={submitLogin}>
                 <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-amber-950">
+                    <label htmlFor="email" className="block font-['Barlow_Condensed'] text-sm font-medium text-amber-950">
                         Email
                     </label>
                     <input
@@ -95,11 +95,11 @@ const LoginForm = ({ onLoginSuccess }) => {
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500"
                     />
                     {emailError.map((error, index) => (
-                        <p key={index} className="text-red-500 text-sm mt-1">{error}</p>
+                        <p key={index} className="text-red-700 text-sm mt-1">{error}</p>
                     ))}
                 </div>
                 <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-amber-950">
+                    <label htmlFor="password" className="block font-['Barlow_Condensed'] text-sm font-medium text-amber-950">
                         Password
                     </label>
                     <input
@@ -110,17 +110,17 @@ const LoginForm = ({ onLoginSuccess }) => {
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500"
                     />
                     {passwordError.map((error, index) => (
-                        <p key={index} className="text-red-500 text-sm mt-1">{error}</p>
+                        <p key={index} className="text-red-700 text-sm mt-1">{error}</p>
                     ))}
                 </div>
                 {serverError && (
-                    <p className="text-red-500 text-sm">{serverError}</p>
+                    <p className="text-red-700 text-sm">{serverError}</p>
                 )}
                 <button
                     type="submit"
-                    className="w-full bg-sky-600 text-white py-2 px-4 rounded-md hover:bg-sky-700 transition-colors"
+                    className="w-full bg-amber-700 font-['Neucha'] text-white py-2 px-4 rounded-md hover:bg-amber-600 transition-colors"
                 >
-                    Login
+                    Skicka
                 </button>
             </form>
         </div>

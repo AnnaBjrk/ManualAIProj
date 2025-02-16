@@ -1,0 +1,76 @@
+Based on your current stack (React frontend, FastAPI backend, PostgreSQL on EC2), I'll help you design a solution for PDF uploads. For file storage, Amazon S3 would be the better choice over EC2 because:
+
+1. S3 is specifically designed for object storage and is more cost-effective than storing files on EC2
+2. S3 provides better scalability and durability
+3. S3 reduces load on your EC2 instance
+4. S3 offers built-in CDN capabilities through CloudFront if needed
+
+Here's a proposed solution:
+
+
+
+Here's how the solution works:
+
+1. Frontend (React):
+   - Provides a drag-and-drop interface for PDF uploads
+   - Validates file type (PDF only)
+   - Uses presigned URLs for secure direct uploads to S3
+   - Shows upload progress and handles errors
+   - Confirms upload completion with backend
+
+2. Backend (FastAPI):
+   - Generates presigned URLs for secure S3 uploads
+   - Tracks uploads in PostgreSQL database
+   - Verifies successful uploads
+   - Organizes files by user and date
+
+3. Storage:
+   - Uses S3 for scalable file storage
+   - Files are organized by user ID and date
+   - PostgreSQL tracks metadata and upload status
+
+To implement this solution:
+
+1. Set up an S3 bucket:
+   ```bash
+   aws s3 mb s3://your-bucket-name
+   ```
+
+2. Configure CORS on the S3 bucket to allow uploads from your domain:
+   ```json
+   {
+     "CORSRules": [
+       {
+         "AllowedOrigins": ["https://your-domain.com"],
+         "AllowedMethods": ["PUT", "GET", "HEAD"],
+         "AllowedHeaders": ["*"],
+         "MaxAgeSeconds": 3000
+       }
+     ]
+   }
+   ```
+
+3. Set up the necessary environment variables in your FastAPI application:
+   ```bash
+   AWS_ACCESS_KEY=your_access_key
+   AWS_SECRET_KEY=your_secret_key
+   AWS_REGION=your_region
+   S3_BUCKET=your_bucket_name
+   ```
+
+4. Run the database migrations to create the file_uploads table.
+
+The solution is secure because:
+- Uses presigned URLs for direct S3 uploads
+- Implements proper authentication
+- Validates file types
+- Organizes files by user
+- Tracks upload status in database
+
+It's also scalable because:
+- S3 handles large files efficiently
+- Direct-to-S3 uploads reduce server load
+- PostgreSQL handles metadata efficiently
+- Files are organized by date and user
+
+Would you like me to explain any part of this solution in more detail?

@@ -1,11 +1,15 @@
 @import url("https://fonts.googleapis.com/css2?family=Roboto&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Neucha&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
+
 @theme {
-  --font-roboto: "Roboto", sans-serif; 
+  --font-roboto: "Roboto", sans-serif;
+  --font-neucha: "Neucha", cursive;
+  --font-montserrat: "Montserrat", sans-serif;
+  --font-barlow: "Barlow Condensed", sans-serif;
 }
-
-
-
 //det här är kvar från tailwind/vite template -ta bort
 /* :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
