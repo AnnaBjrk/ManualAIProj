@@ -1,0 +1,1 @@
+# här sparar vi vanliga queries som vi vill kunna återanvända i koden mellan olika path operations/endpoints.
