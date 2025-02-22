@@ -12,6 +12,8 @@ from sqlalchemy import select, update, delete, insert
 from app.api.v1.core.models import Company
 from app.api.v1.core.schemas import CompanySchema
 from app.api.v1.routers import router
+#for fileupdates - lite konstigt här finns ingen uploads....
+from app.api.v1.routers import uploads
 
 
 # Funktion som körs när vi startar FastAPI - 
@@ -25,6 +27,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(router, prefix="/v1", tags=["v1"])
+#for file upload
+app.include_router(uploads.router)
 
 
 # Depends is FastAPI's dependency injection system

@@ -2,10 +2,12 @@
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
+# from sqlalchemy.ext.declarative import declarative_base
 from .api.v1.core.models import Base
 from .settings import settings
 
 load_dotenv()
+
 
 
 # echo = True to see the SQL queries

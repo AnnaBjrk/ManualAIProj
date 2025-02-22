@@ -106,3 +106,4 @@ def validate(login_form: LoginForm, db: Session = Depends(get_db)):
     raise HTTPException(
         status_code=500, detail=f"Error executing query: {str(e)}")
     
+    

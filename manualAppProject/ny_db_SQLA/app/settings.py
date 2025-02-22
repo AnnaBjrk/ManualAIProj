@@ -8,6 +8,10 @@ env_path = Path(__file__).parent.parent / ".env"
 
 class Settings(BaseSettings):
     DB_URL: str
+    AWS_ACCESS_KEY: str
+    AWS_SECRET_KEY: str
+    AWS_REGION: str
+    S3_BUCKET: str
 
     model_config = SettingsConfigDict(env_file=str(env_path))
     
