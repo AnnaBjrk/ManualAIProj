@@ -1,9 +1,13 @@
-#pydantic modeller
+# pydantic modeller ev ska vi lägga till en validation??
 
 # från tobias fil anpassa till mina
 from typing import List
+from datetime import datetime
+from enum import Enum
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
+
+# heter i tobias fil class UserRegisterSchema
 
 
 class RegisterForm(BaseModel):
@@ -33,7 +37,7 @@ class RegisterForm(BaseModel):
         if not v:
             raise ValueError("You must accept the terms")
         return v
-    
+
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={
@@ -60,6 +64,12 @@ class LoginForm(BaseModel):
             }
         }
     )
+
+
+# We use this for our auth - ny
+class TokenSchema(BaseModel):
+    access_token: str
+    token_type: str
 
 
 class CompanySchema(BaseModel):
@@ -98,3 +108,13 @@ class CompanySchema(BaseModel):
             }
         }
     )
+
+
+# We use this to return user data in authentication
+class UserOutSchema(BaseModel):
+    id: int
+    email: str
+    last_name: str
+    first_name: str
+    is_superuser: bool
+    model_config = ConfigDict(from_attributes=True)
