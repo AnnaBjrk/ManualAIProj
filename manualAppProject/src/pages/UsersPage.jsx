@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import cuteRob from "../assets/img/diskmPersp.jpg";
+import UploadManual from "../components/UploadManual";
 
 export default function UsersPage() {
     const [firstName, setFirstName] = useState('');
@@ -34,4 +35,14 @@ export default function UsersPage() {
             </p>
         </div>
     );
+
+    <div>
+        <UploadManual>
+
+        </UploadManual>
+
+
+    </div>
+
+
 }

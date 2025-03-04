@@ -24,7 +24,7 @@ Save this as `cors.json` and apply it:
 aws s3api put-bucket-cors --bucket your-bucket-name --cors-configuration file://cors.json
 ```
 
-3. **Bucket Policy** - Set appropriate access controls:
+3. **Bucket Policy** - Set appropriate access controls: (har gett list kontroll också kan lista objekt från s3)
 ```json
 {
     "Version": "2012-10-17",
@@ -46,7 +46,7 @@ aws s3api put-bucket-cors --bucket your-bucket-name --cors-configuration file://
 ```
 
 4. **IAM User/Role** - Create an IAM user with these permissions:
-```json
+```json (har gett bredare access *)
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -68,7 +68,7 @@ aws s3api put-bucket-cors --bucket your-bucket-name --cors-configuration file://
 ```
 
 5. **Lifecycle Rules** (Optional) - For managing file retention:
-```json
+```json (vi väntar med den. deletar alla filer i filen uploads efter 30 dagar. sätts i S2 an under Management)
 {
     "Rules": [
         {
@@ -94,6 +94,7 @@ S3_BUCKET=your-bucket-name
 ```
 
 Important Security Considerations:
+(ej gjort)
 - Enable server-side encryption if needed
 - Set up proper bucket versioning if required
 - Consider using VPC endpoints for S3 access

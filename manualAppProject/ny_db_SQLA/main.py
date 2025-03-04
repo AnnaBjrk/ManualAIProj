@@ -1,9 +1,10 @@
-#I main.py så hanterar vi uppstart av hela FastAPI-applikationen och vissa andra operationer, 
-# såsom lifecycle operations, inkludering av olika routers. 
-# main.py behöver vara längst upp för att säkerställa att projekts imports sker korrekt 
+# I main.py så hanterar vi uppstart av hela FastAPI-applikationen och vissa andra operationer,
+# såsom lifecycle operations, inkludering av olika routers.
+# main.py behöver vara längst upp för att säkerställa att projekts imports sker korrekt
 # - det är ju main vi faktiskt kommer köra när vi startar applikationen. Allt utgår därifrån.
-
+import os  # ev behövs den inte - används för att importera från env
 from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi.middleware.cors import CORSMiddleware
 from app.db_setup import init_db, get_db
 from contextlib import asynccontextmanager
 from fastapi import Request
@@ -12,23 +13,41 @@ from sqlalchemy import select, update, delete, insert
 from app.api.v1.core.models import Company
 from app.api.v1.core.schemas import CompanySchema
 from app.api.v1.routers import router
-#for fileupdates - lite konstigt här finns ingen uploads....
-from app.api.v1.routers import uploads
+# alternativ till psycopg2 error hantering
+from sqlalchemy.exc import IntegrityError
+# for fileupdates - lite konstigt här finns ingen uploads....
+# psycopg2 behöver inte importas - men man behöver köra pip install psycopg2-binary. SQLAlchemy hittar den automatiskt sen
 
 
-# Funktion som körs när vi startar FastAPI - 
+# Funktion som körs när vi startar FastAPI -
 # perfekt ställe att skapa en uppkoppling till en databas
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db() 
-    #koden här körs innan uppstart
+    init_db()
+    # koden här körs innan uppstart
     yield
-    #koden här körs vid avslut
+    # koden här körs vid avslut
 
+# lifespan är en funktion som initierar databasen när app startar
 app = FastAPI(lifespan=lifespan)
 app.include_router(router, prefix="/v1", tags=["v1"])
-#for file upload
-app.include_router(uploads.router)
+# both routers -upload and genral are imported with this, no separate needed
+
+
+origins = [
+    "http://localhost:3000",  # React app URL
+    "http://localhost:8000",  # FastAPI app URL
+    "http://localhost:5173",  # FastAPI app URL
+    "https://jib.nu"  # URL to EC2
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # Depends is FastAPI's dependency injection system
@@ -42,25 +61,28 @@ app.include_router(uploads.router)
 
 # scalars returnar resulteatet som en lista - vilket är cleanare än om man skulle köra utan det, finns inget retrunar den 404
 
-@app.get("/company", status_code=200)
-def list_companies(db: Session = Depends(get_db)):
-    programs = db.scalars(select(Company)).all()
-    if not programs:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No companies found")
-    return programs
+# @app.get("/company", status_code=200)
+# def list_companies(db: Session = Depends(get_db)):
+#     programs = db.scalars(select(Company)).all()
+#     if not programs:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND, detail="No companies found")
+#     return programs
 
-...
-from app.api.v1.core.schemas import CompanySchema
 
-@app.post("/company", status_code=201)
-def add_company(company: CompanySchema, db: Session = Depends(get_db)) -> CompanySchema:
-    db_company = Company(**company.model_dump(exclude_unset=True)) # **data.dict() deprecated
-    db.add(db_company)
-    db.commit()
-    db.refresh(db_company) # Vi ser till att vi får den uppdaterade versionen med ID't
-		# Du kan skippa .refresh() om du använt expire_on_commit=False i ditt sessionobjekt
-    return db_company
+# ...
 
+
+# @app.post("/company", status_code=201)
+# def add_company(company: CompanySchema, db: Session = Depends(get_db)) -> CompanySchema:
+#     # **data.dict() deprecated
+#     db_company = Company(**company.model_dump(exclude_unset=True))
+#     db.add(db_company)
+#     db.commit()
+#     # Vi ser till att vi får den uppdaterade versionen med ID't
+#     db.refresh(db_company)
+#     # Du kan skippa .refresh() om du använt expire_on_commit=False i ditt sessionobjekt
+#     return db_company
 
 
 ############################################

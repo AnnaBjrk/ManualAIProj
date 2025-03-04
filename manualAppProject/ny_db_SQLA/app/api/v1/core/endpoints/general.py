@@ -1,19 +1,19 @@
-# I’m going to put most of my endpoints in a file called [general.py](http://general.py) in the folder endpoints - 
+# I’m going to put most of my endpoints in a file called [general.py](http://general.py) in the folder endpoints -
 # you can call it whatever you want, depending on what the routes in this file should focus on, if there is a focus.
 
 # - We create a variable called router, you could call it something else
-# - We add some tags and a prefix for all the URLs part of this router, e.g 
+# - We add some tags and a prefix for all the URLs part of this router, e.g
 # in this case below, all the endpoints will always start with /dashboard, e.g `/dashboard/company`
 
-#här ligger våra endpoints/path operators
+# här ligger våra endpoints/path operators
 
-from app.api.v1.core.models import Company, Users 
+from app.api.v1.core.models import Company, Users
 from app.api.v1.core.schemas import CompanySchema, RegisterForm, LoginForm
 from app.db_setup import get_db
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
 from sqlalchemy import delete, insert, select, update
 from sqlalchemy.orm import Session, joinedload, selectinload
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 router = APIRouter(tags=["dashboard"], prefix="/dashboard")
 
@@ -26,7 +26,6 @@ def list_companies(db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND, detail="No companies found"
         )
     return programs
-
 
 
 @router.post("/company", status_code=201)
@@ -42,6 +41,7 @@ def add_company(company: CompanySchema, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Database")
     return db_company
 
+
 @router.get("/company/{id}")
 def company_detail(id: int, db: Session = Depends(get_db)):
     """
@@ -54,6 +54,7 @@ def company_detail(id: int, db: Session = Depends(get_db)):
     if not result:
         raise HTTPException(status_code=404, detail="Company not found")
     return result
+
 
 @router.delete("/company/{company_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_company(company_id: int, db: Session = Depends(get_db)):
@@ -68,7 +69,8 @@ def delete_company(company_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {}
 
-@router.post("/register", status_code = 201)
+
+@router.post("/register", status_code=201)
 def add_user(user: RegisterForm, db: Session = Depends(get_db)):
     """Adds a user, using pydantic model for validation"""
     try:
@@ -80,7 +82,7 @@ def add_user(user: RegisterForm, db: Session = Depends(get_db)):
     return db_user
 
 
-@router.post("/validate_user", status_code = 201)
+@router.post("/validate_user", status_code=201)
 def validate(login_form: LoginForm, db: Session = Depends(get_db)):
     """Checks if a user exists and returns id and first name, using pydantic model for validation"""
     try:
@@ -100,10 +102,8 @@ def validate(login_form: LoginForm, db: Session = Depends(get_db)):
         else:
             raise HTTPException(
                 status_code=401, detail="Password or email is not correct")
-        
+
     except SQLAlchemyError as e:
         print(f"PostgreSQL error {e.pgcode} - {e}")
-    raise HTTPException(
-        status_code=500, detail=f"Error executing query: {str(e)}")
-    
-    
+        raise HTTPException(
+            status_code=500, detail=f"Error executing query: {str(e)}")

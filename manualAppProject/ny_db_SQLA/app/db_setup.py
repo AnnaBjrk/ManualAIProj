@@ -6,8 +6,18 @@ from sqlalchemy.orm import Session
 from .api.v1.core.models import Base
 from .settings import settings
 
-load_dotenv()
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 
+import boto3
+# import jwt
+import uuid
+from datetime import datetime
+
+from .settings import settings
+# from .api.v1.core.models import Users
+
+load_dotenv()
 
 
 # echo = True to see the SQL queries
@@ -23,18 +33,47 @@ def get_db():
         yield session
 
 
+# S3 client dependency
+def get_s3_client():
+    return boto3.client(
+        's3',
+        # config=Config(signature_version='s3v4')
+        aws_access_key_id=settings.AWS_ACCESS_KEY,
+        aws_secret_access_key=settings.AWS_SECRET_KEY,
+        region_name=settings.AWS_REGION
+    )
 
 
+# OAuth2 scheme for token authentication
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/token")
+
+# Token verification - inte helt säker på denna något som Claude hittat på, vi - kolla på Tobias authentication
+# om denna är värd att använda...
 
 
+# def verify_token(token: str = Depends(oauth2_scheme)):
+#     credentials_exception = HTTPException(
+#         status_code=status.HTTP_401_UNAUTHORIZED,
+#         detail="Could not validate credentials",
+#         headers={"WWW-Authenticate": "Bearer"},
+#     )
 
+#     try:
+#         payload = jwt.decode(token, settings.SECRET_KEY,
+#                              algorithms=[settings.ALGORITHM])
+#         user_id: str = payload.get("sub")
+#         if user_id is None:
+#             raise credentials_exception
+#     except jwt.PyJWTError:
+#         raise credentials_exception
 
+#     # Get user from database
+#     db = next(get_db())
+#     user = db.query(User).filter(User.id == user_id).first()
+#     if user is None:
+#         raise credentials_exception
 
-
-
-
-
-
+#     return user
 
 
 # import os
@@ -100,7 +139,7 @@ def get_db():
 #             if count == 0:
 #                 cursor.execute(
 #                     """
-#                     INSERT INTO users (first_name, last_name, email, password, terms_of_agreement)  
+#                     INSERT INTO users (first_name, last_name, email, password, terms_of_agreement)
 #                     VALUES
 #                     ('Lars', 'Johansson', 'lars.johansson@example.com', 'password123!', TRUE),
 #                     ('Emilia', 'Andersson', 'emilia.andersson@example.com', 'secure!Pass1', TRUE),

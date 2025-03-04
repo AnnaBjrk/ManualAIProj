@@ -26,7 +26,7 @@ Here's how the solution works:
 
 3. Storage:
    - Uses S3 for scalable file storage
-   - Files are organized by user ID and date
+   - Files are organized by user ID and date (här vill vi ha fabrikat, modellnummer1 och modellnummer2, olika sätt att identifiera manualen)
    - PostgreSQL tracks metadata and upload status
 
 To implement this solution:
@@ -37,7 +37,7 @@ To implement this solution:
    ```
 
 2. Configure CORS on the S3 bucket to allow uploads from your domain:
-   ```json
+   ```json (har lagt till både jib.nu och gizmobuddy.online)
    {
      "CORSRules": [
        {
