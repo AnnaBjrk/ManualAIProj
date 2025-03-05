@@ -66,7 +66,7 @@ class Token(Base):
 class FileUpload(Base):
     __tablename__ = "file_uploads"
     user_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    url_to_file: Mapped[str] = mapped_column(String(255), nullable=False)
+    url_to_file: Mapped[str] = mapped_column(String(2048), nullable=False)
     brand: Mapped[str] = mapped_column(String(255), nullable=False)
     modelnumber_1: Mapped[str] = mapped_column(String(255), nullable=False)
     modelnumber_2: Mapped[str] = mapped_column(String(255), nullable=False)

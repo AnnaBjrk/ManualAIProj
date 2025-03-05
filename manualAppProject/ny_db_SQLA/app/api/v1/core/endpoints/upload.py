@@ -4,9 +4,10 @@ from sqlalchemy import select
 from datetime import datetime, UTC
 import uuid
 
-from app.db_setup import get_db, get_s3_client, oauth2_scheme  # verify_token
+from app.db_setup import get_db, get_s3_client  # verify_token
 from app.api.v1.core.models import FileUpload
 from app.settings import Settings
+from app.security import get_current_user
 
 router = APIRouter(
     prefix="/api",
@@ -26,7 +27,9 @@ async def get_upload_url(
     device_type: str,
     db: Session = Depends(get_db),
     s3_client=Depends(get_s3_client),
-    token: str = Depends(oauth2_scheme)
+
+    # verify current user - gets token from authentication header and verifys it with verify token
+    current_user=Depends(get_current_user)
 ):
 
     # Validate content type, This parameter is typically sent by the client (frontend) when making the request to get the upload URL.
@@ -43,14 +46,11 @@ async def get_upload_url(
             detail=f"Content type {content_type} not allowed. Allowed types: {allowed_types}"
         )
 
-    # Verify user from token
-    # user = verify_token(token)
-
     # Generate unique file ID
     file_id = str(uuid.uuid4())
 
     # Create S3 key
-    s3_key = f"uploads/{user.id}/{file_id}_{filename}"
+    s3_key = f"uploads/{current_user.id}/{file_id}_{filename}"
 
     # Generate presigned URL
     try:
@@ -68,7 +68,7 @@ async def get_upload_url(
 
     # Create database record
     file_upload = FileUpload(
-        user_id=user.id,
+        user_id=current_user.id,
         url_to_file=presigned_url,
         brand=brand,
         modelnumber_1=modelnumber_1,
@@ -79,19 +79,21 @@ async def get_upload_url(
     )
     db.add(file_upload)
     db.commit()
-
+    db.refresh(file_upload)  # Get the generated ID
     return {
         "uploadUrl": presigned_url,
-        "fileId": file_id
+        "fileId": file_upload.id
     }
 
 
 @router.post("/confirm-upload")
 async def confirm_upload(
-    file_id: str,
+    file_id: int,
     db: Session = Depends(get_db),
     s3_client=Depends(get_s3_client),  # Changed to use dependency
-    token: str = Depends(oauth2_scheme)
+
+    # verify current user - gets token from authentication header and verifys it with verify token
+    current_user=Depends(get_current_user)
 ):
     # Verify user from token
     # user = verify_token(token)
@@ -99,7 +101,7 @@ async def confirm_upload(
     # Get file upload record
     stmt = select(FileUpload).where(
         FileUpload.id == file_id,
-        FileUpload.user_id == user.id
+        FileUpload.user_id == current_user.id
     )
     file_upload = db.scalar(stmt)
 
