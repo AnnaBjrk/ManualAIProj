@@ -16,22 +16,6 @@ class Base(DeclarativeBase):
         Integer, primary_key=True, autoincrement=True)
 
 
-class Company(Base):
-    __tablename__ = "companies"
-
-    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
-    postal_code: Mapped[str]
-    email: Mapped[str] = mapped_column(String(1000))
-    description: Mapped[str] = mapped_column(Text)
-    analytics_module: Mapped[bool] = mapped_column(nullable=True)
-    # New
-    website: Mapped[str] = mapped_column(nullable=True)
-
-    # skriver ut snyggt
-    def __repr__(self):
-        return f"<Company={self.name}>"
-
-
 class Users(Base):
     __tablename__ = "users"
 
@@ -44,13 +28,19 @@ class Users(Base):
 
     # Auth
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
-    tokens: Mapped[list["Token"]] = relationship(back_populates="user")
+    tokens: Mapped[list["Token"]] = relationship(back_populates="users")
+    user_file_displays: Mapped[list["UserFileDisplays"]
+                               ] = relationship(back_populates="users")
+    product_image_uploads: Mapped[list["ProductImageUploads"]] = relationship(
+        back_populates="users")
+    file_uploads: Mapped[list["FileUpload"]] = relationship(
+        back_populates="users")
 
     def __repr__(self):
         return f"<Users={self.first_name}>"
 
 
-class Token(Base):
+class Token(Base):  # ändra till Tokens vid tillfälle
     __tablename__ = "tokens"
 
     created: Mapped[datetime] = mapped_column(
@@ -58,14 +48,15 @@ class Token(Base):
     )
     token: Mapped[str] = mapped_column(unique=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    user: Mapped["Users"] = relationship(back_populates="tokens")
+    users: Mapped["Users"] = relationship(back_populates="tokens")
 
  # ny för att ladda upp filer, egen design
 
 
+# ändra till FileUploads vid tillfälle eller byta namn det här är just listningen av manualer....
 class FileUpload(Base):
     __tablename__ = "file_uploads"
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     url_to_file: Mapped[str] = mapped_column(String(2048), nullable=False)
     brand: Mapped[str] = mapped_column(String(255), nullable=False)
     modelnumber_1: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -75,9 +66,44 @@ class FileUpload(Base):
         String(255), nullable=False)  # pending, completed, failed
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now())
-    completed_at: Mapped[datetime] = Column(
+    completed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=True)
     s3_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    user_file_displays: Mapped[list["UserFileDisplays"]
+                               ] = relationship(back_populates="file_uploads")
+    users: Mapped["Users"] = relationship(back_populates="file_uploads")
 
     def __repr__(self):
         return f"<FileUpload={self.brand}, {self.modelnumber_1}, {self.device_type}>"
+
+
+class UserFileDisplays(Base):
+    __tablename__ = "user_file_displays"
+
+    remove_from_view: Mapped[bool] = mapped_column(Boolean, default=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    users: Mapped["Users"] = relationship(back_populates="user_file_displays")
+    # the user gets to give the device a name such as "TV in livingroom"
+    users_own_naming: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_id: Mapped[int] = mapped_column(ForeignKey("file_uploads.id"))
+    file_uploads: Mapped["FileUpload"] = relationship(
+        back_populates="user_file_displays")
+
+
+# to handle and store image of product label for further processing
+class ProductImageUploads(Base):
+    __tablename__ = "product_image_uploads"
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    url_to_prod_image: Mapped[str] = mapped_column(
+        String(2048), nullable=False)
+    brand: Mapped[str] = mapped_column(String(255), nullable=False)
+    device_type: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(255), nullable=False)  # pending, completed, failed
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now())
+    completed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=True)
+    s3_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    users: Mapped["Users"] = relationship(
+        back_populates="product_image_uploads")

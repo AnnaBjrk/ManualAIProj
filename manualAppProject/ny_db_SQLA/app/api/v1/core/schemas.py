@@ -71,8 +71,6 @@ class TokenSchema(BaseModel):
     access_token: str
     token_type: str
 
-
-class CompanySchema(BaseModel):
     name: str = Field(
         max_length=100,
         description="The name of the company, unique and required."
