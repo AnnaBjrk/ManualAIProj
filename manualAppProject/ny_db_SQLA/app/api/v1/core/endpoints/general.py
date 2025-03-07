@@ -11,7 +11,7 @@ from app.api.v1.core.models import Users, UserFileDisplays, FileUpload
 from app.api.v1.core.schemas import RegisterForm, LoginForm
 from app.db_setup import get_db, get_s3_client
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
-from sqlalchemy import delete, insert, select, update
+from sqlalchemy import delete, insert, select, update, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from app.security import get_current_user
@@ -108,7 +108,8 @@ def list_user_manuals(current_user: Users = Depends(get_current_user), db: Sessi
             status_code=500, detail=f"Error executing query: {str(e)}")
 
 
-# behöver kollas igenom
+#
+#
 @router.get("/get-download-url/{file_id}")
 async def get_download_url(
     file_id: int,
@@ -116,6 +117,7 @@ async def get_download_url(
     s3_client=Depends(get_s3_client),
     current_user=Depends(get_current_user)
 ):
+    """file_id läggs till urlen i endpointen, returnar en download url"""
     # Get file record from database
     file_upload = db.query(FileUpload).filter(
         FileUpload.id == file_id,
@@ -139,3 +141,97 @@ async def get_download_url(
         raise HTTPException(status_code=500, detail=str(e))
 
     return {"downloadUrl": download_url}
+
+
+@router.get("/search")
+async def search_for_manual(
+    model_number: str,
+    brand: str,
+    device_type: str,
+    db: Session = Depends(get_db),
+    s3_client=Depends(get_s3_client),
+    current_user=Depends(get_current_user),
+):
+    """Searches the table FileUpload by - model_number, brand, device_type, returns one or several.file Id model_number, brand, device_type, match
+    as a JSON"""
+    try:
+        stmt = (
+            select(
+                FileUpload.brand,
+                FileUpload.device_type,
+                FileUpload.modelnumber_1,
+                FileUpload.modelnumber_2,
+                FileUpload.id,
+            )
+            .where(
+                FileUpload.brand == brand,
+                FileUpload.device_type == device_type,
+                or_(FileUpload.modelnumber_1 == model_number,
+                    FileUpload.modelnumber_2 == model_number)
+            )
+        )
+        perfect_match = db.execute(stmt).all()
+        if perfect_match:
+            result = []
+            for match in perfect_match:
+                result.append({
+                    "brand": match.brand,
+                    "device_type": match.device_type,
+                    "model_numbers": [match.modelnumber_1, match.modelnumber_2],
+                    "file_id": match.id,
+                    "match": "perfect match",
+                })
+            return {"manuals": result}
+        else:
+            length = len(model_number)
+            first_half = model_number[:length//2]
+            second_half = model_number[length//2]
+            start_idx = length//3
+            end_idx = 2 * (length//3)
+            middle_third = model_number[start_idx:end_idx]
+            partly_matches = [first_half, second_half, middle_third]
+            result = []
+            for model_number_part in partly_matches:
+
+                stmt = (
+                    select(
+                        FileUpload.brand,
+                        FileUpload.device_type,
+                        FileUpload.modelnumber_1,
+                        FileUpload.modelnumber_2,
+                        FileUpload.id,
+                    )
+                    .where(
+                        FileUpload.brand == brand,
+                        FileUpload.device_type == device_type,
+                        or_(
+                            FileUpload.modelnumber_1.ilike(
+                                f"%{model_number_part}%"),
+                            FileUpload.modelnumber_2.ilike(
+                                f"%{model_number_part}%")
+                        )
+                    )
+                )
+                partly_match = db.execute(stmt).all()
+                if partly_match:
+
+                    # Format the results
+
+                    for match in partly_match:
+                        result.append({
+                            "brand": partly_match.brand,
+                            "device_type": partly_match.device_type,
+                            "model_numbers": [partly_match.modelnumber_1, partly_match.modelnumber_2],
+                            "file_id": partly_match.id,
+                            "match": "partly match",
+                        })
+
+                    # Handle the case where no manuals are found/registered on the user
+            if not result:
+                raise HTTPException(
+                    status_code=404, detail="No manuals found")
+            else:
+                return {"manuals": result}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
