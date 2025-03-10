@@ -41,32 +41,51 @@ const LoginForm = ({ onLoginSuccess }) => {
 
         if (isEmailValid && isPasswordValid) {
             try {
-                console.log("Sending data:", { email, password });
+                // Get form values
+                const formValues = {
+                    username: email, // API expects 'username', but we're using 'email' in the UI
+                    password: password
+                };
 
-                const response = await fetch(`${apiUrl}/validate_user`, {
+                // Create URLSearchParams for x-www-form-urlencoded format
+                // This is what OAuth2PasswordRequestForm in FastAPI expects
+                const formData = new URLSearchParams();
+                for (const [key, value] of Object.entries(formValues)) {
+                    formData.append(key, value);
+                }
+
+                console.log("Sending form data with username:", email);
+                //console.log("Sending data:", { email, password });
+
+                const response = await fetch(`${apiUrl}/v1/auth/token_login`, {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json",
+                        "Content-Type": "application/x-www-form-urlencoded"
                     },
-                    body: JSON.stringify({
-                        email,
-                        password
-                    }),
+                    body: formData
+
                 });
 
                 const data = await response.json();
                 if (!response.ok) {
                     console.log("Validation error:", data);
-                    throw new Error(JSON.stringify(data));
+                    throw new Error(data.detail || "Login failed");
                 }
+
+                // Store token in local storage
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('token_type', data.token_type);
+
+
 
                 // Success case - use the data from response
                 onLoginSuccess({
                     firstName: data.first_name,
-                    userId: data.user_id
+                    lastName: data.last_name,
+                    userId: "authenticated"
                 });
 
-                console.log("Success", data);
+                console.log("Successfull login", data);
                 setServerError("");
             } catch (error) {
                 console.log("Full error:", error);
@@ -90,6 +109,7 @@ const LoginForm = ({ onLoginSuccess }) => {
                     <input
                         type="email"
                         id="email"
+                        name="email" //kolla denna
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500"
@@ -105,6 +125,7 @@ const LoginForm = ({ onLoginSuccess }) => {
                     <input
                         type="password"
                         id="password"
+                        name="password" //kolla denna
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500"

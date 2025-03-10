@@ -100,7 +100,7 @@ export default function RegisterForm({ onLoginSuccess }) {
                     terms_of_agreement: terms
                 });
 
-                const response = await fetch(`${apiUrl}/register`, {
+                const response = await fetch(`${apiUrl}/v1/auth/register`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -126,26 +126,31 @@ export default function RegisterForm({ onLoginSuccess }) {
                 setServerError("");
 
                 // If registration successful, immediately log them in
-                const loginResponse = await fetch(`${apiUrl}/validate_user`, {
+                const formData = new URLSearchParams();
+                formData.append('username', email);  // Note: 'username' not 'email'
+                formData.append('password', password);
+
+                const loginResponse = await fetch(`${apiUrl}/v1/auth/token_login`, {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json",
+                        "Content-Type": "application/x-www-form-urlencoded",
                     },
-                    body: JSON.stringify({
-                        email,
-                        password
-                    }),
+                    body: formData
                 });
 
-                const loginData = await loginResponse.json();
-                if (!loginResponse.ok) {
-                    throw new Error(JSON.stringify(loginData));
-                }
+
+
+
+                // const loginData = await loginResponse.json();
+                // if (!loginResponse.ok) {
+                //     throw new Error(JSON.stringify(loginData));
+                // }
 
                 // Success case - use the data from login response
                 onLoginSuccess({
-                    firstName: loginData.first_name,
-                    userId: loginData.user_id
+                    firstName: firstName,  // Use the input values since API doesn't return user data
+                    lastName: lastName,
+                    userId: "authenticated"
                 });
 
             } catch (error) {

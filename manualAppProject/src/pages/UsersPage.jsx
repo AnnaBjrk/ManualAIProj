@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import cuteRob from "../assets/img/diskmPersp.jpg";
 import UploadManual from "../components/UploadManual";
+import UserManualsTable from "../components/UserManualsTable";
 
 export default function UsersPage() {
     const [firstName, setFirstName] = useState('');
@@ -28,6 +29,11 @@ export default function UsersPage() {
                     src={cuteRob}
                     alt="söt robot"
                 />
+            </div>
+            <div>
+                {/* Adds User Manuals Table */}
+                <UserManualsTable />
+
             </div>
 
             <p className="text-gray-700 font-['Roboto'] leading-relaxed">
