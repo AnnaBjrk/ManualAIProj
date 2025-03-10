@@ -17,46 +17,46 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from app.security import get_current_user
 from app.settings import Settings
 
-router = APIRouter(tags=["dashboard"], prefix="/dashboard")
+router = APIRouter(tags=["gen"], prefix="/gen")
 
 
-@router.post("/register", status_code=201)
-def add_user(user: RegisterForm, db: Session = Depends(get_db)):
-    """Adds a user, using pydantic model for validation"""
-    try:
-        db_user = Users(**user.model_dump())
-        db.add(db_user)
-        db.commit()
-    except IntegrityError:
-        raise HTTPException(status_code=400, detail="Database")
-    return db_user
+# @router.post("/register", status_code=201)
+# def add_user(user: RegisterForm, db: Session = Depends(get_db)):
+#     """Adds a user, using pydantic model for validation"""
+#     try:
+#         db_user = Users(**user.model_dump())
+#         db.add(db_user)
+#         db.commit()
+#     except IntegrityError:
+#         raise HTTPException(status_code=400, detail="Database")
+#     return db_user
 
 
-@router.post("/validate_user", status_code=201)
-def validate(login_form: LoginForm, db: Session = Depends(get_db)):
-    """Checks if a user exists and returns id and first name, using pydantic model for validation"""
-    try:
-        result = db.scalars(
-            select(Users)
-            .where(Users.email == login_form.email)
-        ).first()
+# @router.post("/validate_user", status_code=201)
+# def validate(login_form: LoginForm, db: Session = Depends(get_db)):
+#     """Checks if a user exists and returns id and first name, using pydantic model for validation"""
+#     try:
+#         result = db.scalars(
+#             select(Users)
+#             .where(Users.email == login_form.email)
+#         ).first()
 
-        # Handle the case where no user is found
-        if not result:
-            raise HTTPException(
-                status_code=404, detail="User not found")
+#         # Handle the case where no user is found
+#         if not result:
+#             raise HTTPException(
+#                 status_code=404, detail="User not found")
 
-        # Check password
-        if login_form.password == result.password:
-            return {"id": result.id, "first_name": result.first_name}
-        else:
-            raise HTTPException(
-                status_code=401, detail="Password or email is not correct")
+#         # Check password
+#         if login_form.password == result.password:
+#             return {"id": result.id, "first_name": result.first_name}
+#         else:
+#             raise HTTPException(
+#                 status_code=401, detail="Password or email is not correct")
 
-    except SQLAlchemyError as e:
-        print(f"PostgreSQL error {e.pgcode} - {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Error executing query: {str(e)}")
+#     except SQLAlchemyError as e:
+#         print(f"PostgreSQL error {e.pgcode} - {e}")
+#         raise HTTPException(
+#             status_code=500, detail=f"Error executing query: {str(e)}")
 
 
 @router.post("/list_user_manuals", status_code=201)
@@ -88,19 +88,20 @@ def list_user_manuals(current_user: Users = Depends(get_current_user), db: Sessi
         result = []
         for manual in user_manuals:
             result.append({
-                "user_comment": manual.users_own_naming,
+                "users_own_naming": manual.users_own_naming,
                 "brand": manual.brand,
                 "device_type": manual.device_type,
-                "model_numbers": [manual.modelnumber_1, manual.modelnumber_2],
+                "model_numbers": manual.modelnumber_1,
                 "file_id": manual.id,
             })
-
+        return {"manuals": result}
         # Handle the case where no manuals are found/registered on the user
-        if not result:
-            raise HTTPException(
-                status_code=404, detail="No manuals choosen")
-        else:
-            return {"manuals": result}
+        # ingen hantering av nollresulat
+        # if not result:
+        #     raise HTTPException(
+        #         status_code=404, detail="No manuals choosen")
+        # else:
+        #     return {"manuals": result}
 
     except SQLAlchemyError as e:
         print(f"PostgreSQL error {e.pgcode} - {e}")
@@ -221,7 +222,7 @@ async def search_for_manual(
                         result.append({
                             "brand": match.brand,
                             "device_type": match.device_type,
-                            "model_numbers": [match.modelnumber_1, partly_match.modelnumber_2],
+                            "model_numbers": [match.modelnumber_1, match.modelnumber_2],
                             "file_id": match.id,
                             "match": "partly match",
                         })

@@ -15,7 +15,7 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/auth/token_login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 DEFAULT_ENTROPY = 32  # number of bytes to return by default
@@ -124,7 +124,7 @@ def get_current_user(
     Below, we get the current user based on that token
     """
     token = verify_token_access(token_str=token, db=db)
-    user = token.user
+    user = token.users
     return user
 
 

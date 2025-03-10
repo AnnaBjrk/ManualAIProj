@@ -53,10 +53,14 @@ def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = create_database_token(user_id=user.id, db=db)
-    return {"access_token": access_token.token, "token_type": "bearer"}
+    return {"access_token": access_token.token,
+            "token_type": "bearer",
+            "access_token": access_token.token,
+            "first_name": user.first_name,
+            "last_name": user.last_name}
 
 
-@router.post("/user/create", status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 def register_user(
     user: RegisterForm, db: Session = Depends(get_db)
 ) -> UserOutSchema:
