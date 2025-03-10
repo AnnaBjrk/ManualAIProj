@@ -24,11 +24,12 @@ from sqlalchemy.orm import Session
 router = APIRouter(tags=["auth"], prefix="/auth")
 
 
-@router.post("/token")
+@router.post("/token_login")
 def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Session = Depends(get_db),
 ) -> TokenSchema:
+    """Takes in the data in form submission format"""
     # Keep in mind that without the response model or return schema
     # we would expose the hashed password, which absolutely cannot happen
     # Perhaps better to use .only or select the columns explicitly
@@ -87,3 +88,8 @@ def logout(
 @router.get("/me", response_model=UserOutSchema)
 def read_users_me(current_user: Users = Depends(get_current_user)):
     return current_user
+
+
+@router.get("/user/name")
+def get_user_name(current_user: Users = Depends(get_current_user)):
+    return {"first_name": current_user.first_name, "last_name": current_user.last_name}

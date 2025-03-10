@@ -70,39 +70,17 @@ class LoginForm(BaseModel):
 class TokenSchema(BaseModel):
     access_token: str
     token_type: str
+    first_name: str | None = None
+    last_name: str | None = None
 
-    name: str = Field(
-        max_length=100,
-        description="The name of the company, unique and required."
-    )
-    postal_code: str = Field(
-        description="The postal code for the company."
-    )
-    email: EmailStr = Field(
-        max_length=1000,
-        description="The contact email for the company."
-    )
-    description: str = Field(
-        description="A description of the company."
-    )
-    analytics_module: bool | None = Field(
-        None,
-        description="Indicates whether the company uses the analytics module."
-    )
-    website: str | None = Field(
-        None,
-        description="The company website."
-    )
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={
             "example": {
-                "name": "Tech University",
-                "postal_code": "12345",
-                "email": "info@techuniversity.com",
-                "description": "A leading institution in technology education and research.",
-                "analytics_module": True,
-                "website": "https://techuniversity.com"
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "token_type": "bearer",
+                "first_name": "John",
+                "last_name": "Doe"
             }
         }
     )

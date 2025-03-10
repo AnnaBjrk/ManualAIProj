@@ -185,7 +185,7 @@ async def search_for_manual(
         else:
             length = len(model_number)
             first_half = model_number[:length//2]
-            second_half = model_number[length//2]
+            second_half = model_number[length//2:]
             start_idx = length//3
             end_idx = 2 * (length//3)
             middle_third = model_number[start_idx:end_idx]
@@ -219,10 +219,10 @@ async def search_for_manual(
 
                     for match in partly_match:
                         result.append({
-                            "brand": partly_match.brand,
-                            "device_type": partly_match.device_type,
-                            "model_numbers": [partly_match.modelnumber_1, partly_match.modelnumber_2],
-                            "file_id": partly_match.id,
+                            "brand": match.brand,
+                            "device_type": match.device_type,
+                            "model_numbers": [match.modelnumber_1, partly_match.modelnumber_2],
+                            "file_id": match.id,
                             "match": "partly match",
                         })
 

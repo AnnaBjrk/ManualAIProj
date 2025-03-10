@@ -26,8 +26,33 @@ def hash_password(password):
     return pwd_context.hash(password)
 
 
+# def verify_password(plain_password, hashed_password):
+    # return pwd_context.verify(plain_password, hashed_password)
+
+    # this function adresses a compatibility issue between paslib and bcrypt in the pwd_context.verify method
+
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    """
+    Verify a password against a hash using passlib's CryptContext
+    with fallback to direct bcrypt for compatibility with newer bcrypt versions
+    """
+    try:
+        # Try using passlib's CryptContext first
+        return pwd_context.verify(plain_password, hashed_password)
+    except AttributeError:
+        # Fallback to using bcrypt directly if passlib has compatibility issues
+        import bcrypt
+        # Ensure plain_password is bytes
+        if isinstance(plain_password, str):
+            plain_password = plain_password.encode('utf-8')
+        # Ensure hashed_password is bytes
+        if isinstance(hashed_password, str):
+            hashed_password = hashed_password.encode('utf-8')
+        try:
+            return bcrypt.checkpw(plain_password, hashed_password)
+        except Exception as e:
+            print(f"Error in bcrypt password verification: {e}")
+            return False
 
 
 def token_bytes(nbytes=None):
