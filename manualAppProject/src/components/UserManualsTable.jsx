@@ -1,10 +1,48 @@
 import React, { useState, useEffect } from "react";
+import { Trash2 } from 'lucide-react';
+import { Download } from 'lucide-react';
+
+const handleDownload = async (fileId) => {
+    try {
+        // Optional: Show loading state
+        // setIsLoading(true);
+
+        // Call the API to get the download URL
+        const response = await fetch(`/api/get-download-url/${fileId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                // Include authentication headers if needed
+                // 'Authorization': `Bearer ${yourAuthToken}`
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error: ${response.status}`);
+        }
+
+        // Parse the JSON response
+        const data = await response.json();
+
+        // open in new tab
+        window.open(data.downloadUrl, '_blank');
+
+    } catch (error) {
+        console.error('Failed to get download URL:', error);
+        // Handle the error - show a notification to the user
+        // setError('Failed to download the manual');
+    } finally {
+        // setIsLoading(false);
+    }
+};
 
 const UserManualsTable = () => {
     const [manuals, setManuals] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [apiResponse, setApiResponse] = useState(null);
+
+
 
     useEffect(() => {
         const fetchManuals = async () => {
@@ -94,7 +132,7 @@ const UserManualsTable = () => {
     if (loading) {
         return (
             <div className="mt-8 mb-10">
-                <h2 className="font-['Roboto'] text-2xl mb-4">Dina sparade manualer</h2>
+                <h2 className="font-['Roboto'] text-2xl mb-4">Sparade manualer</h2>
                 <div className="w-full flex justify-center items-center py-6">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-700"></div>
                 </div>
@@ -104,7 +142,7 @@ const UserManualsTable = () => {
 
     return (
         <div className="mt-8 mb-10">
-            <h2 className="font-['Roboto'] text-2xl mb-4">Dina sparade manualer</h2>
+            <h2 className="font-['Neucha'] text-2xl mb-4">Sparade manualer</h2>
 
             {error && (
                 <div className="p-4 bg-red-50 text-red-600 rounded-md mb-4">
@@ -128,39 +166,51 @@ const UserManualsTable = () => {
                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                         ></path>
                     </svg>
-                    <p className="text-gray-600 font-['Roboto']">Inga manualer hittades</p>
+                    <p className="text-gray-600 font-['Barlow_Condensed']">Det finns inga sparade manualer</p>
                     <p className="text-gray-500 text-sm mt-1">Du har inte lagt till några manualer än</p>
                 </div>
             ) : (
                 <div className="overflow-x-auto shadow-md rounded-lg">
                     <table className="min-w-full bg-white">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="py-3 px-4 text-left text-xs font-medium text-gray-700 uppercase tracking-wider font-['Roboto']">Kommentar</th>
-                                <th className="py-3 px-4 text-left text-xs font-medium text-gray-700 uppercase tracking-wider font-['Roboto']">Märke</th>
-                                <th className="py-3 px-4 text-left text-xs font-medium text-gray-700 uppercase tracking-wider font-['Roboto']">Enhetstyp</th>
-                                <th className="py-3 px-4 text-left text-xs font-medium text-gray-700 uppercase tracking-wider font-['Roboto']">Modellnummer</th>
-                                <th className="py-3 px-4 text-left text-xs font-medium text-gray-700 uppercase tracking-wider font-['Roboto']">Åtgärder</th>
-                            </tr>
-                        </thead>
                         <tbody className="divide-y divide-gray-200">
                             {manuals.map((manual, index) => (
                                 <tr key={index} className="hover:bg-gray-50">
-                                    <td className="py-3 px-4 text-sm text-gray-700 font-['Roboto']">{manual.users_own_naming || "-"}</td>
-                                    <td className="py-3 px-4 text-sm text-gray-700 font-['Roboto']">{manual.brand || "-"}</td>
-                                    <td className="py-3 px-4 text-sm text-gray-700 font-['Roboto']">{manual.device_type || "-"}</td>
-                                    <td className="py-3 px-4 text-sm text-gray-700 font-['Roboto']">
-                                        {manual.model_numbers && Array.isArray(manual.model_numbers)
-                                            ? manual.model_numbers.filter(num => num).join(", ")
-                                            : "-"}
+                                    <td className="py-3 px-4 text-sm text-gray-700 font-black font-['Barlow_Condensed']">{manual.users_own_naming || "-"}</td>
+                                    <td className="py-3 px-4 text-sm text-gray-700 font-['Barlow_Condensed']">{manual.brand || "-"}</td>
+                                    <td className="py-3 px-4 text-sm text-gray-700 font-['Barlow_Condensed']">{manual.device_type || "-"}</td>
+                                    <td className="py-3 px-4 text-sm text-gray-700 font-['Barlow_Condensed']">
+                                        <button
+                                            onClick={() => handleDownload(manual.file_id)}
+                                            // className="bg-sky-800 text-white text-sm font-['Roboto'] hover:bg-amber-900 rounded-full px-4 py-2 inline-flex items-center mr-3 transition-colors duration-200"
+                                            className=" px-1 py-1 ml-4 mb-2 w-20 font-['Neucha'] bg-sky-900 text-sm rounded-sm border-sky-700 text-amber-50 items-center hover:bg-amber-900 transition-colors duration-200"
+                                            title="Lös ett problem"
+                                        >
+                                            <span>Lös ett problem</span>
+                                        </button>
+
                                     </td>
-                                    <td className="py-3 px-4 text-sm text-indigo-600 hover:text-indigo-900 font-['Roboto']">
-                                        <a href={`/view/${manual.file_id}`} className="mr-3">Visa</a>
+                                    <td className="py-3 px-4 text-sm text-amber-900 hover:text-indigo-900 font-['Roboto']">
+
+                                        <button
+                                            onClick={() => handleDownload(manual.file_id)}
+                                            className="text-sky-800 hover:text-amber-900  inline-flex items-center mr-3 relative group"
+                                            title="Ladda ner" // Keep for screen readers
+                                        >
+                                            <Download size={18} />
+                                            <span className="absolute top-full ml-2 whitespace-nowrap bg-sky-800 text-white font-['Barlow_Condensed'] text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200">
+                                                Ladda ner
+                                            </span>
+                                        </button>
+
                                         <button
                                             onClick={() => console.log(`Remove manual ${manual.file_id}`)}
-                                            className="text-red-600 hover:text-red-900"
+                                            className="text-sky-800 hover:text-amber-900 inline-flex items-center relative group"
+                                            title="Ta bort" // Keep for screen readers
                                         >
-                                            Ta bort
+                                            <Trash2 size={18} />
+                                            <span className="absolute top-full ml-2 whitespace-nowrap bg-sky-800 text-white font-['Barlow_Condensed'] text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200">
+                                                Ta bort
+                                            </span>
                                         </button>
                                     </td>
                                 </tr>
