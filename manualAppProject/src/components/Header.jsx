@@ -25,8 +25,8 @@ export default function Header({ onMenuClick, user }) {
                             </Link>
                         </li>
                         <li>
-                            <Link to="/manual" className="px-4 text-base font-['Neucha'] text-amber-50">
-                                Sök efter en manual
+                            <Link to="/search" className="px-4 text-base font-['Neucha'] text-amber-50">
+                                Sök
                             </Link>
                         </li>
                         <li>

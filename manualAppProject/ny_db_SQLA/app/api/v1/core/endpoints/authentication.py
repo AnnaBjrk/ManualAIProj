@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from app.api.v1.core.models import Token, Users
+from app.api.v1.core.models import Tokens, Users
 from app.api.v1.core.schemas import (
     TokenSchema,
     UserOutSchema,
@@ -79,10 +79,10 @@ def register_user(
 
 @router.delete("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(
-    current_token: Token = Depends(get_current_token),
+    current_token: Tokens = Depends(get_current_token),
     db: Session = Depends(get_db),
 ):
-    db.execute(delete(Token).where(Token.token == current_token.token))
+    db.execute(delete(Tokens).where(Tokens.token == current_token.token))
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

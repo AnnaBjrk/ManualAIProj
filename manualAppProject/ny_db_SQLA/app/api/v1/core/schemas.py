@@ -94,3 +94,12 @@ class UserOutSchema(BaseModel):
     first_name: str
     is_superuser: bool
     model_config = ConfigDict(from_attributes=True)
+
+# for search without image
+
+
+class SearchRequest(BaseModel):
+    modelnumber: str = ""
+    modelname: str = ""
+    brand: str = ""
+    device_type: str = ""

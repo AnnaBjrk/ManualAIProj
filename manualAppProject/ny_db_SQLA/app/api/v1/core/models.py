@@ -28,39 +28,39 @@ class Users(Base):
 
     # Auth
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
-    tokens: Mapped[list["Token"]] = relationship(back_populates="users")
+    tokens: Mapped[list["Tokens"]] = relationship(back_populates="users")
     user_file_displays: Mapped[list["UserFileDisplays"]
                                ] = relationship(back_populates="users")
     product_image_uploads: Mapped[list["ProductImageUploads"]] = relationship(
         back_populates="users")
-    file_uploads: Mapped[list["FileUpload"]] = relationship(
+    manuals: Mapped[list["Manuals"]] = relationship(
         back_populates="users")
 
     def __repr__(self):
         return f"<Users={self.first_name}>"
 
 
-class Token(Base):  # ändra till Tokens vid tillfälle
+class Tokens(Base):  # ändra till Tokens vid tillfälle
     __tablename__ = "tokens"
 
     created: Mapped[datetime] = mapped_column(
         default=lambda: datetime.now(timezone.utc)
     )
-    token: Mapped[str] = mapped_column(unique=True, index=True)
+    tokens: Mapped[str] = mapped_column(unique=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     users: Mapped["Users"] = relationship(back_populates="tokens")
 
  # ny för att ladda upp filer, egen design
 
 
-# ändra till FileUploads vid tillfälle eller byta namn det här är just listningen av manualer....
-class FileUpload(Base):
-    __tablename__ = "file_uploads"
+# ändra till Manuals hette tidigare FileUploads, modelnumber hette modelnumber_1 och modelname hette modelnumber_2 vid tillfälle eller byta namn det här är just listningen av manualer....
+class Manuals(Base):
+    __tablename__ = "manuals"
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     url_to_file: Mapped[str] = mapped_column(String(2048), nullable=False)
     brand: Mapped[str] = mapped_column(String(255), nullable=False)
-    modelnumber_1: Mapped[str] = mapped_column(String(255), nullable=False)
-    modelnumber_2: Mapped[str] = mapped_column(String(255), nullable=False)
+    modelnumber: Mapped[str] = mapped_column(String(255), nullable=False)
+    modelname: Mapped[str] = mapped_column(String(255), nullable=False)
     device_type: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[str] = mapped_column(
         String(255), nullable=False)  # pending, completed, failed
@@ -70,11 +70,11 @@ class FileUpload(Base):
         DateTime(timezone=True), nullable=True)
     s3_key: Mapped[str] = mapped_column(String(255), nullable=False)
     user_file_displays: Mapped[list["UserFileDisplays"]
-                               ] = relationship(back_populates="file_uploads")
-    users: Mapped["Users"] = relationship(back_populates="file_uploads")
+                               ] = relationship(back_populates="manuals")
+    users: Mapped["Users"] = relationship(back_populates="manuals")
 
     def __repr__(self):
-        return f"<FileUpload={self.brand}, {self.modelnumber_1}, {self.device_type}>"
+        return f"<Manuals={self.brand}, {self.modelnumber_1}, {self.device_type}>"
 
 
 class UserFileDisplays(Base):
@@ -85,8 +85,8 @@ class UserFileDisplays(Base):
     users: Mapped["Users"] = relationship(back_populates="user_file_displays")
     # the user gets to give the device a name such as "TV in livingroom"
     users_own_naming: Mapped[str] = mapped_column(String(255), nullable=False)
-    file_id: Mapped[int] = mapped_column(ForeignKey("file_uploads.id"))
-    file_uploads: Mapped["FileUpload"] = relationship(
+    file_id: Mapped[int] = mapped_column(ForeignKey("manuals.id"))
+    manuals: Mapped["Manuals"] = relationship(
         back_populates="user_file_displays")
 
 

@@ -7,56 +7,19 @@
 
 # här ligger våra endpoints/path operators
 
-from app.api.v1.core.models import Users, UserFileDisplays, FileUpload
+from app.api.v1.core.models import Users, UserFileDisplays, Manuals
 from app.api.v1.core.schemas import RegisterForm, LoginForm
+from app.api.v1.core.services import check_for_partial_match, check_for_perfect_match, validate_content_in_image
 from app.db_setup import get_db, get_s3_client
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status, Form, File, UploadFile
 from sqlalchemy import delete, insert, select, update, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from app.security import get_current_user
 from app.settings import Settings
 
+
 router = APIRouter(tags=["gen"], prefix="/gen")
-
-
-# @router.post("/register", status_code=201)
-# def add_user(user: RegisterForm, db: Session = Depends(get_db)):
-#     """Adds a user, using pydantic model for validation"""
-#     try:
-#         db_user = Users(**user.model_dump())
-#         db.add(db_user)
-#         db.commit()
-#     except IntegrityError:
-#         raise HTTPException(status_code=400, detail="Database")
-#     return db_user
-
-
-# @router.post("/validate_user", status_code=201)
-# def validate(login_form: LoginForm, db: Session = Depends(get_db)):
-#     """Checks if a user exists and returns id and first name, using pydantic model for validation"""
-#     try:
-#         result = db.scalars(
-#             select(Users)
-#             .where(Users.email == login_form.email)
-#         ).first()
-
-#         # Handle the case where no user is found
-#         if not result:
-#             raise HTTPException(
-#                 status_code=404, detail="User not found")
-
-#         # Check password
-#         if login_form.password == result.password:
-#             return {"id": result.id, "first_name": result.first_name}
-#         else:
-#             raise HTTPException(
-#                 status_code=401, detail="Password or email is not correct")
-
-#     except SQLAlchemyError as e:
-#         print(f"PostgreSQL error {e.pgcode} - {e}")
-#         raise HTTPException(
-#             status_code=500, detail=f"Error executing query: {str(e)}")
 
 
 @router.post("/list_user_manuals", status_code=201)
@@ -69,13 +32,13 @@ def list_user_manuals(current_user: Users = Depends(get_current_user), db: Sessi
         stmt = (
             select(
                 UserFileDisplays.users_own_naming,
-                FileUpload.brand,
-                FileUpload.device_type,
-                FileUpload.modelnumber_1,
-                FileUpload.modelnumber_2,
-                FileUpload.id,
+                Manuals.brand,
+                Manuals.device_type,
+                Manuals.modelnumber,
+                Manuals.modelname,
+                Manuals.id,
             )
-            .join(FileUpload, UserFileDisplays.file_id == FileUpload.id)
+            .join(Manuals, UserFileDisplays.file_id == Manuals.id)
             .where(
                 UserFileDisplays.user_id == current_user.id,
                 UserFileDisplays.remove_from_view == False
@@ -91,7 +54,7 @@ def list_user_manuals(current_user: Users = Depends(get_current_user), db: Sessi
                 "users_own_naming": manual.users_own_naming,
                 "brand": manual.brand,
                 "device_type": manual.device_type,
-                "model_numbers": manual.modelnumber_1,
+                "model_numbers": manual.modelnumber,
                 "file_id": manual.id,
             })
         return {"manuals": result}
@@ -120,9 +83,9 @@ async def get_download_url(
 ):
     """file_id läggs till urlen i endpointen, returnar en download url"""
     # Get file record from database
-    file_upload = db.query(FileUpload).filter(
-        FileUpload.id == file_id,
-        FileUpload.user_id == current_user.id
+    file_upload = db.query(Manuals).filter(
+        Manuals.id == file_id,
+        Manuals.user_id == current_user.id
     ).first()
 
     if not file_upload:
@@ -144,95 +107,73 @@ async def get_download_url(
     return {"downloadUrl": download_url}
 
 
-@router.get("/search")
+@router.post("/search/words_only")
 async def search_for_manual(
-    model_number: str,
+    modelnumber: str = "",
+    modelname: str = "",
     brand: str,
     device_type: str,
     db: Session = Depends(get_db),
-    s3_client=Depends(get_s3_client),
-    current_user=Depends(get_current_user),
 ):
-    """Searches the table FileUpload by - model_number, brand, device_type, returns one or several.file Id model_number, brand, device_type, match
-    as a JSON"""
     try:
-        stmt = (
-            select(
-                FileUpload.brand,
-                FileUpload.device_type,
-                FileUpload.modelnumber_1,
-                FileUpload.modelnumber_2,
-                FileUpload.id,
+        # Only add non-empty search words
+        search_words = []
+        if modelnumber and modelnumber.strip():
+            search_words.append(modelnumber)
+        if modelname and modelname.strip():
+            search_words.append(modelname)
+
+        if not search_words:
+            raise HTTPException(
+                status_code=400,
+                detail="At least one of 'modelnumber' or 'modelname' must be provided"
             )
-            .where(
-                FileUpload.brand == brand,
-                FileUpload.device_type == device_type,
-                or_(FileUpload.modelnumber_1 == model_number,
-                    FileUpload.modelnumber_2 == model_number)
-            )
-        )
-        perfect_match = db.execute(stmt).all()
-        if perfect_match:
-            result = []
-            for match in perfect_match:
-                result.append({
-                    "brand": match.brand,
-                    "device_type": match.device_type,
-                    "model_numbers": [match.modelnumber_1, match.modelnumber_2],
-                    "file_id": match.id,
-                    "match": "perfect match",
-                })
-            return {"manuals": result}
-        else:
-            length = len(model_number)
-            first_half = model_number[:length//2]
-            second_half = model_number[length//2:]
-            start_idx = length//3
-            end_idx = 2 * (length//3)
-            middle_third = model_number[start_idx:end_idx]
-            partly_matches = [first_half, second_half, middle_third]
-            result = []
-            for model_number_part in partly_matches:
+        result = check_for_perfect_match(search_words, device_type, brand, db)
+        if not result:
+            result = check_for_partial_match(
+                search_words, device_type, brand, db)
+            if not result:
+                print("no semi match")
+                raise HTTPException(
+                    status_code=404, detail="No manuals found")
 
-                stmt = (
-                    select(
-                        FileUpload.brand,
-                        FileUpload.device_type,
-                        FileUpload.modelnumber_1,
-                        FileUpload.modelnumber_2,
-                        FileUpload.id,
-                    )
-                    .where(
-                        FileUpload.brand == brand,
-                        FileUpload.device_type == device_type,
-                        or_(
-                            FileUpload.modelnumber_1.ilike(
-                                f"%{model_number_part}%"),
-                            FileUpload.modelnumber_2.ilike(
-                                f"%{model_number_part}%")
-                        )
-                    )
-                )
-                partly_match = db.execute(stmt).all()
-                if partly_match:
+        return {"manuals": result}  # Consistent return structure
 
-                    # Format the results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-                    for match in partly_match:
-                        result.append({
-                            "brand": match.brand,
-                            "device_type": match.device_type,
-                            "model_numbers": [match.modelnumber_1, match.modelnumber_2],
-                            "file_id": match.id,
-                            "match": "partly match",
-                        })
 
-                    # Handle the case where no manuals are found/registered on the user
+@router.post("/search/with_image")
+async def search_for_manual(
+    image: UploadFile = File(...),
+    brand: str = Form(...),
+    device_type: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    """Searches with an uploaded image in the table Manuals by 
+        input: image, modelnumber, modelname, brand, device_type, 
+        returns: a list of dictionaries containing entries from the Manuals table 
+        brand: match.brand,
+        device_type: match.device_type,
+        model_numbers: match.modelnumber,
+        modelname: match.modelname,
+        file_id: match.id,
+        match: "perfect match,
+        (the image is currently not stored in the S3, its passed directly to the functions)
+        """
+    image_temp = await image.read()
+    search_words = validate_content_in_image(image_temp)
+
+    try:
+        result = check_for_perfect_match(search_words, device_type, brand, db)
+        if not result:
+            result = check_for_partial_match(
+                search_words, device_type, brand, db)
             if not result:
                 raise HTTPException(
                     status_code=404, detail="No manuals found")
-            else:
-                return {"manuals": result}
+
+        return {"manuals": result}  # Consistent return structure
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

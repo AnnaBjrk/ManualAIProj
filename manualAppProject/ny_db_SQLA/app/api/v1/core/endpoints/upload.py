@@ -5,7 +5,7 @@ from datetime import datetime, UTC
 import uuid
 
 from app.db_setup import get_db, get_s3_client  # verify_token
-from app.api.v1.core.models import FileUpload
+from app.api.v1.core.models import Manuals
 from app.settings import Settings
 from app.security import get_current_user
 
@@ -22,8 +22,8 @@ async def get_manual_upload_url(
     filename: str,
     content_type: str,
     brand: str,
-    modelnumber_1: str,
-    modelnumber_2: str,
+    modelnumber: str,
+    modelname: str,
     device_type: str,
     db: Session = Depends(get_db),
     s3_client=Depends(get_s3_client),
@@ -67,12 +67,12 @@ async def get_manual_upload_url(
         raise HTTPException(status_code=500, detail=str(e))
 
     # Create database record
-    file_upload = FileUpload(
+    file_upload = Manuals(
         user_id=current_user.id,
         url_to_file=presigned_url,
         brand=brand,
-        modelnumber_1=modelnumber_1,
-        modelnumber_2=modelnumber_2,
+        modelnumber=modelnumber,
+        modelname=modelname,
         device_type=device_type,
         s3_key=s3_key,
         status='pending'
@@ -99,9 +99,9 @@ async def confirm_manual_upload(
     # user = verify_token(token)
 
     # Get file upload record
-    stmt = select(FileUpload).where(
-        FileUpload.id == file_id,
-        FileUpload.user_id == current_user.id
+    stmt = select(Manuals).where(
+        Manuals.id == file_id,
+        Manuals.user_id == current_user.id
     )
     file_upload = db.scalar(stmt)
 
@@ -130,8 +130,8 @@ async def get_manual_upload_url(
     filename: str,
     content_type: str,
     brand: str,
-    modelnumber_1: str,
-    modelnumber_2: str,
+    modelnumber: str,
+    modelname: str,
     device_type: str,
     db: Session = Depends(get_db),
     s3_client=Depends(get_s3_client),
@@ -175,12 +175,12 @@ async def get_manual_upload_url(
         raise HTTPException(status_code=500, detail=str(e))
 
     # Create database record
-    file_upload = FileUpload(
+    file_upload = Manuals(
         user_id=current_user.id,
         url_to_file=presigned_url,
         brand=brand,
-        modelnumber_1=modelnumber_1,
-        modelnumber_2=modelnumber_2,
+        modelnumber=modelnumber,
+        modelname=modelname,
         device_type=device_type,
         s3_key=s3_key,
         status='pending'
@@ -207,9 +207,9 @@ async def confirm_manual_upload(
     # user = verify_token(token)
 
     # Get file upload record
-    stmt = select(FileUpload).where(
-        FileUpload.id == file_id,
-        FileUpload.user_id == current_user.id
+    stmt = select(Manuals).where(
+        Manuals.id == file_id,
+        Manuals.user_id == current_user.id
     )
     file_upload = db.scalar(stmt)
 

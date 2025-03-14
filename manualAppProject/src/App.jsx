@@ -5,7 +5,7 @@ import IndexPage from "./pages/Index.jsx"
 import QueryPage from "./pages/Query.jsx"
 import Layout from "./pages/Layout.jsx"
 import AboutPage from "./pages/About.jsx"
-import ManualPage from "./pages/Manual.jsx"
+import SearchPage from "./pages/Search.jsx"
 import UsersPage from "./pages/UsersPage.jsx"
 import { Navigate } from 'react-router-dom';
 
@@ -38,8 +38,8 @@ const router = createBrowserRouter([
       },
 
       {
-        path: "manual",
-        element: <ManualPage />,
+        path: "search",
+        element: <SearchPage />,
       },
 
       {

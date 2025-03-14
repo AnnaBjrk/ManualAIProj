@@ -4,24 +4,7 @@ from .api.v1.core.models import Company
 from .api.v1.core.models import Users
 
 
-def seed_companies(db):
-    # Add initial companies
-    companies = [
-        Company(
-            name="Acme Corp",
-            postal_code="12345",
-            email="contact@acme.com",
-            description="A great company",
-            analytics_module=True
-        ),
-        # Add more companies as needed
-    ]
-    db.add_all(companies)
-    db.flush()
-    return companies
-
-
-def seed_users(db):
+def seed_manuals(db):
     # Create a list of user data
     user_data = [
         {

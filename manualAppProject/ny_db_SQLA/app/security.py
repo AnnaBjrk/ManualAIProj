@@ -1,11 +1,12 @@
 # fil som används för authentications
+
 import base64
 from datetime import UTC, datetime, timedelta, timezone
 from random import SystemRandom
 from typing import Annotated
 from uuid import UUID, uuid4
 
-from app.api.v1.core.models import Token, Users
+from app.api.v1.core.models import Tokens, Users
 from app.db_setup import get_db
 from app.settings import settings
 from fastapi import Depends, HTTPException, status
@@ -86,21 +87,21 @@ def token_urlsafe(nbytes=None):
 
 def create_database_token(user_id: UUID, db: Session):
     randomized_token = token_urlsafe()
-    new_token = Token(token=randomized_token, user_id=user_id)
+    new_token = Tokens(token=randomized_token, user_id=user_id)
     db.add(new_token)
     db.commit()
     return new_token
 
 
-def verify_token_access(token_str: str, db: Session) -> Token:
+def verify_token_access(token_str: str, db: Session) -> Tokens:
     """
     Return a token
     """
     max_age = timedelta(minutes=int(settings.ACCESS_TOKEN_EXPIRE_MINUTES))
     token = (
         db.execute(
-            select(Token).where(
-                Token.token == token_str, Token.created >= datetime.now(
+            select(Tokens).where(
+                Tokens.token == token_str, Tokens.created >= datetime.now(
                     UTC) - max_age
             ),
         )
