@@ -109,10 +109,10 @@ async def get_download_url(
 
 @router.post("/search/words_only")
 async def search_for_manual(
-    modelnumber: str = "",
-    modelname: str = "",
     brand: str,
     device_type: str,
+    modelnumber: str = "",  # Optional parameter with default value
+    modelname: str = "",    # Optional parameter with default value
     db: Session = Depends(get_db),
 ):
     try:
