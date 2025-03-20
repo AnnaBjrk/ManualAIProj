@@ -36,6 +36,8 @@ origins = [
     "http://localhost:3000",  # React app URL
     "http://localhost:8000",  # FastAPI app URL
     "http://localhost:5173",  # FastAPI app URL
+    # mistral api called by the mistral package
+    "https://api.mistral.ai/v1/chat/completions"
     "https://jib.nu"  # URL to EC2
 ]
 

@@ -72,6 +72,8 @@ class TokenSchema(BaseModel):
     token_type: str
     first_name: str | None = None
     last_name: str | None = None
+    is_admin: bool
+    is_partner: bool
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -80,7 +82,9 @@ class TokenSchema(BaseModel):
                 "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                 "token_type": "bearer",
                 "first_name": "John",
-                "last_name": "Doe"
+                "last_name": "Doe",
+                "is_admin": "True",
+                "is_partner": "False"
             }
         }
     )
@@ -92,7 +96,8 @@ class UserOutSchema(BaseModel):
     email: str
     last_name: str
     first_name: str
-    is_superuser: bool
+    is_admin: bool
+    is_partner: bool
     model_config = ConfigDict(from_attributes=True)
 
 # for search without image

@@ -27,6 +27,8 @@ export default function Layout() {
     const handleLogin = (userData) => {
         const userDataWithExpiry = {
             ...userData,
+            isAdmin: Boolean(userData.isAdmin),    // Ensure it's a boolean
+            isPartner: Boolean(userData.isPartner),
             expiryTime: new Date().getTime() + (24 * 60 * 60 * 1000) // 24 hours from now
         };
         setUser(userDataWithExpiry);

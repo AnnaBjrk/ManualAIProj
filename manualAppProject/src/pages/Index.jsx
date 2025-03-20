@@ -11,9 +11,9 @@ export default function Index() {
         <div className="font-['Neucha']">
             <section className="m-5 p-8 bg-cover bg-center  bg-sky-900 text-right text-wrap rounded-lg"
                 style={{ backgroundImage: `url(${litenRobBla})` }}>
-                <h1 className="text-5xl font-['Neucha'] mb-4">Gizmo buddy <br /> - din hjälp när <br />hemmatekniken strular
+                <h1 className="text-5xl font-['Neucha'] mb-4">Gizmo buddy <br /> - din manual agent <br />när hemmatekniken strular
                 </h1>
-                <p className="text-base font-['Barlow_Condensed']"> Hitta enkelt din manual och ta AI till hjälp för att lösa ditt problem.</p>
+                <p className="text-base font-['Barlow_Condensed']"> Hitta enkelt din manual och få AI hjälp att lösa ditt problem.</p>
                 {/* <a href="query.html"
                     className="inline-block mt-5 px-6 py-3 bg-amber-600 text-white rounded hover:bg-blue-700 transition-colors">
                     Fråga AI

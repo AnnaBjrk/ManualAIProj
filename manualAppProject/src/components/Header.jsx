@@ -42,6 +42,22 @@ export default function Header({ onMenuClick, user }) {
                             </li>
                         ) : null}
                         </div>
+                        <div> {user && user.isAdmin ? (
+                            <li>
+                                <Link to="/adminpage" className="px-4 text-base font-['Neucha'] text-amber-50">
+                                    Admin
+                                </Link>
+                            </li>
+                        ) : null}
+                        </div>
+                        <div> {user && user.isPartner ? (
+                            <li>
+                                <Link to="/partnerpage" className="px-4 text-base font-['Neucha'] text-amber-50">
+                                    Partner
+                                </Link>
+                            </li>
+                        ) : null}
+                        </div>
 
                     </ul>
 

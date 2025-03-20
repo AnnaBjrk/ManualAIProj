@@ -55,9 +55,10 @@ def login(
     access_token = create_database_token(user_id=user.id, db=db)
     return {"access_token": access_token.token,
             "token_type": "bearer",
-            "access_token": access_token.token,
             "first_name": user.first_name,
-            "last_name": user.last_name}
+            "last_name": user.last_name,
+            "is_admin": user.is_admin,
+            "is_partner": user.is_partner}
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)

@@ -24,7 +24,7 @@ const LoginForm = ({ onLoginSuccess }) => {
 
     function validatePassword() {
         let passwordErrors = [];
-        if (password.length <= 8) {
+        if (password.length < 8) {
             passwordErrors.push("Password length must be greater than 8");
         }
         if (!password) {
@@ -82,7 +82,9 @@ const LoginForm = ({ onLoginSuccess }) => {
                 onLoginSuccess({
                     firstName: data.first_name,
                     lastName: data.last_name,
-                    userId: "authenticated"
+                    userId: "authenticated",
+                    isAdmin: Boolean(data.is_admin),
+                    isPartner: Boolean(data.is_partner)
                 });
 
                 console.log("Successfull login", data);

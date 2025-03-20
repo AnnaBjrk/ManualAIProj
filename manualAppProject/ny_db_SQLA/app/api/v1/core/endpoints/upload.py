@@ -17,8 +17,8 @@ router = APIRouter(
 settings = Settings()
 
 
-@router.post("/get-manual-upload-url")
-async def get_manual_upload_url(
+@router.post("/upload-manual")
+async def upload_manual(
     filename: str,
     content_type: str,
     brand: str,
@@ -46,40 +46,42 @@ async def get_manual_upload_url(
             detail=f"Content type {content_type} not allowed. Allowed types: {allowed_types}"
         )
 
-    # Generate unique file ID
-    file_id = str(uuid.uuid4())
-
-    # Create S3 key
-    s3_key = f"uploads/{current_user.id}/{file_id}_{filename}"
-
-    # Generate presigned URL
-    try:
-        presigned_url = s3_client.generate_presigned_url(
-            'put_object',
-            Params={
-                'Bucket': settings.S3_BUCKET,
-                'Key': s3_key,
-                'ContentType': content_type
-            },
-            ExpiresIn=3600
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    # Create database record
+    # Create database record first (without S3 URL)
     file_upload = Manuals(
         user_id=current_user.id,
-        url_to_file=presigned_url,
+        url_to_file="",  # Temporary placeholder
         brand=brand,
         modelnumber=modelnumber,
         modelname=modelname,
         device_type=device_type,
-        s3_key=s3_key,
-        status='pending'
+        status='pending',
+        s3_key=""  # Temporary placeholder
     )
     db.add(file_upload)
     db.commit()
     db.refresh(file_upload)  # Get the generated ID
+
+    # Now use the DB ID for the S3 key
+    s3_key = f"uploads/{current_user.id}/{file_upload.id}_{filename}"
+
+    # Generate presigned URL with this key
+    presigned_url = s3_client.generate_presigned_url(
+        'put_object',
+        Params={
+            'Bucket': settings.S3_BUCKET,
+            'Key': s3_key,
+            'ContentType': content_type
+        },
+        ExpiresIn=3600
+    )
+
+    # Update the record with the actual URL and key
+    file_upload.url_to_file = presigned_url
+    file_upload.s3_key = s3_key
+    db.commit()
+
+    # Get the generated ID TODO fundera på vad den här ska returnera
+    db.refresh(file_upload)
     return {
         "uploadUrl": presigned_url,
         "fileId": file_upload.id

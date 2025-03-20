@@ -1,8 +1,9 @@
 # här skapar vi våra tabeller
 
 from datetime import datetime, timezone
+import uuid
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import Column, String, DateTime, ForeignKey
 from sqlalchemy.sql import func
@@ -12,8 +13,8 @@ from sqlalchemy.sql import func
 
 
 class Base(DeclarativeBase):
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, autoincrement=True)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID, primary_key=True, default=uuid.uuid4)
 
 
 class Users(Base):
@@ -27,7 +28,8 @@ class Users(Base):
     terms_of_agreement: Mapped[bool] = mapped_column(nullable=False)
 
     # Auth
-    is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_partner: Mapped[bool] = mapped_column(Boolean, default=False)
     tokens: Mapped[list["Tokens"]] = relationship(back_populates="users")
     user_file_displays: Mapped[list["UserFileDisplays"]
                                ] = relationship(back_populates="users")
@@ -46,8 +48,8 @@ class Tokens(Base):  # ändra till Tokens vid tillfälle
     created: Mapped[datetime] = mapped_column(
         default=lambda: datetime.now(timezone.utc)
     )
-    tokens: Mapped[str] = mapped_column(unique=True, index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    token: Mapped[str] = mapped_column(unique=True, index=True)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     users: Mapped["Users"] = relationship(back_populates="tokens")
 
  # ny för att ladda upp filer, egen design
