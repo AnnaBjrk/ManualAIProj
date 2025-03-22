@@ -1,16 +1,12 @@
 # pydantic modeller ev ska vi lägga till en validation??
 
-# från tobias fil anpassa till mina
-from typing import List
+from typing import List, Optional
 from datetime import datetime
-from enum import Enum
-
 from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
-
-# heter i tobias fil class UserRegisterSchema
 
 
 class RegisterForm(BaseModel):
+    """form for registration of user in users table"""
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
     email: EmailStr
@@ -53,6 +49,7 @@ class RegisterForm(BaseModel):
 
 
 class LoginForm(BaseModel):
+    """form for user login"""
     email: EmailStr
     password: str
     model_config = ConfigDict(
@@ -66,8 +63,8 @@ class LoginForm(BaseModel):
     )
 
 
-# We use this for our auth - ny
 class TokenSchema(BaseModel):
+    """For setting validating password creating a token and returning info for local storage"""
     access_token: str
     token_type: str
     first_name: str | None = None
@@ -90,8 +87,8 @@ class TokenSchema(BaseModel):
     )
 
 
-# We use this to return user data in authentication
 class UserOutSchema(BaseModel):
+    """validates input in registerform"""
     id: int
     email: str
     last_name: str
@@ -100,11 +97,46 @@ class UserOutSchema(BaseModel):
     is_partner: bool
     model_config = ConfigDict(from_attributes=True)
 
-# for search without image
-
-
-class SearchRequest(BaseModel):
+# används ej ta bort?
+# class SearchRequest(BaseModel):
     modelnumber: str = ""
     modelname: str = ""
     brand: str = ""
     device_type: str = ""
+
+
+class UserResponse(BaseModel):
+    """for endpoint that lists all users for the admin view, validates output"""
+    id: str
+    first_name: str
+    last_name: str
+    is_admin: bool
+    is_partner: bool
+    deleted: bool
+    manual_count: int
+    display_count: int
+    last_login: Optional[datetime] = None
+
+
+class PaginatedUserResponse(BaseModel):
+    """for endpoint that lists all users in the admin view, validates output when pagination is used"""
+    users: List[UserResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+class AdminStatusUpdate(BaseModel):
+    """for the endpoint that changes admin status"""
+    is_admin: bool
+
+
+class PartnerStatusUpdate(BaseModel):
+    """for the endpoint that changes partner status"""
+    is_partner: bool
+
+
+class DeleteStatusUpdate(BaseModel):
+    """for the endpoint that sets the user delete field to true"""
+    deleted: bool

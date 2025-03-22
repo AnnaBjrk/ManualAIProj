@@ -1,4 +1,3 @@
-# importerar.env filer, kan vara olika för olika klasser
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 

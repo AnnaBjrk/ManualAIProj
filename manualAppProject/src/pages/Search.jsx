@@ -246,8 +246,8 @@ export default function Search() {
 
 
                     <button
-                        className={`py-4 px-6 font-medium border-b-2 text-sm focus:outline-none ${activeTab === "image"
-                            ? "border-blue-500 text-blue-600"
+                        className={`py-4 px-6 font-['Neucha'] font-medium border-b-2 text-base focus:outline-none ${activeTab === "image"
+                            ? "border-sky-700 text-sky-700"
                             : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                             }`}
                         onClick={() => setActiveTab("image")}
@@ -255,8 +255,8 @@ export default function Search() {
                         Bildsökning
                     </button>
                     <button
-                        className={`py-4 px-6 font-medium border-b-2 text-sm focus:outline-none ${activeTab === "text"
-                            ? "border-blue-500 text-blue-600"
+                        className={`py-4 px-6 font-['Neucha'] font-medium border-b-2 text-base focus:outline-none ${activeTab === "text"
+                            ? "border-sky-700 text-sky-700"
                             : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                             }`}
                         onClick={() => setActiveTab("text")}
@@ -305,7 +305,7 @@ export default function Search() {
                                 name="modelnumber"
                                 value={formData.modelnumber}
                                 onChange={handleChange}
-                                className={`px-3 py-2 border ${validationError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                className={`px-3 py-2 border ${validationError ? 'border-amber-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                                 placeholder="T.ex. ESF5545LOX, SM-G998B"
                             />
                         </div>
@@ -318,21 +318,21 @@ export default function Search() {
                                 name="modelname"
                                 value={formData.modelname}
                                 onChange={handleChange}
-                                className={`px-3 py-2 border ${validationError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                className={`px-3 py-2 border ${validationError ? 'border-amber-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                                 placeholder="T.ex. Galaxy S21 Ultra"
                             />
                         </div>
                     </div>
 
                     {validationError && (
-                        <div className="mt-2 text-red-600 text-sm">
+                        <div className="mt-2 text-amber-600 text-sm">
                             {validationError}
                         </div>
                     )}
 
                     <button
                         type="submit"
-                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-300 font-['Barlow_Condensed']"
+                        className="mt-4 px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-sky-800 transition-colors duration-300 font-['Neucha']"
                         disabled={isLoading}
                     >
                         {isLoading ? 'Söker...' : 'Sök'}
@@ -396,14 +396,14 @@ export default function Search() {
                                 <button
                                     type="button"
                                     onClick={() => setImageFormData(prev => ({ ...prev, image: null }))}
-                                    className="mt-2 text-sm text-red-600 hover:text-red-800"
+                                    className="mt-2 text-sm text-amber-600 hover:text-amber-800"
                                 >
                                     Ta bort bild
                                 </button>
                             </div>
                         ) : (
                             <div className="text-center">
-                                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                <svg className="mx-auto h-12 w-12 text-amber-500" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                                     <path
                                         d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4h-12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
                                         strokeWidth="2"
@@ -412,7 +412,7 @@ export default function Search() {
                                     />
                                 </svg>
                                 <div className="flex flex-col items-center mt-4">
-                                    <label htmlFor="image-upload" className="cursor-pointer bg-white px-4 py-2 text-sm font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50">
+                                    <label htmlFor="image-upload" className="cursor-pointer bg-gray-100 px-4 py-2 text-sm font-['Neucha'] font-medium text-amber-500 border-2 border-amber-500 rounded-md hover:bg-blue-50">
                                         Välj en bild
                                         <input
                                             id="image-upload"
@@ -423,9 +423,9 @@ export default function Search() {
                                             onChange={handleImageChange}
                                         />
                                     </label>
-                                    <p className="mt-2 text-sm text-gray-500">eller dra och släpp en bild här</p>
+                                    <p className="mt-2 text-sm font-['Barlow_Condensed'] text-gray-500">eller dra och släpp en bild här</p>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-2">
+                                <p className="text-xs font-['Barlow_Condensed'] text-gray-500 mt-2">
                                     Endast bildfiler (PNG, JPG, JPEG, GIF)
                                 </p>
                             </div>
@@ -433,14 +433,14 @@ export default function Search() {
                     </div>
 
                     {validationError && (
-                        <div className="mt-2 text-red-600 text-sm">
+                        <div className="mt-2 text-amber-600 text-sm">
                             {validationError}
                         </div>
                     )}
 
                     <button
                         type="submit"
-                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-300 font-['Barlow_Condensed']"
+                        className="mt-4 px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-sky-800 transition-colors duration-300 font-['Neucha']"
                         disabled={isLoading}
                     >
                         {isLoading ? 'Söker...' : 'Sök med bild'}
@@ -451,7 +451,7 @@ export default function Search() {
             {/* Results Section */}
             <div className="my-6">
                 {error && (
-                    <div className="p-4 bg-red-50 text-red-700 rounded-md mb-4">
+                    <div className="p-4 bg-amber-50 text-amber-700 rounded-md mb-4">
                         {error}
                     </div>
                 )}
@@ -479,7 +479,7 @@ export default function Search() {
                                         </div>
                                         <div className="mt-2 md:mt-0">
                                             <button
-                                                className="text-blue-600 hover:text-blue-800 font-medium"
+                                                className="text-sky-700 hover:text-sky-800 font-medium"
                                                 onClick={() => console.log(`Viewing manual ID: ${manual && manual.file_id ? manual.file_id : 'unknown'}`)}
                                             >
                                                 Visa manual

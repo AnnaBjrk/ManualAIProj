@@ -2,22 +2,16 @@
 # såsom lifecycle operations, inkludering av olika routers.
 # main.py behöver vara längst upp för att säkerställa att projekts imports sker korrekt
 # - det är ju main vi faktiskt kommer köra när vi startar applikationen. Allt utgår därifrån.
-# import os  # ev behövs den inte - används för att importera från env
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db_setup import init_db
 from contextlib import asynccontextmanager
-# from fastapi import Request
-# from sqlalchemy.orm import Session, joinedload, selectinload
-# from sqlalchemy import select, update, delete, insert
+
 from app.api.v1.routers import router
-# alternativ till psycopg2 error hantering
-# from sqlalchemy.exc import IntegrityError
-# for fileupdates - lite konstigt här finns ingen uploads....
-# psycopg2 behöver inte importas - men man behöver köra pip install psycopg2-binary. SQLAlchemy hittar den automatiskt sen
 
 
-# Funktion som körs när vi startar FastAPI -
+# Funktion som körs när vi startar FastAPI
 # perfekt ställe att skapa en uppkoppling till en databas
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -37,7 +31,7 @@ origins = [
     "http://localhost:8000",  # FastAPI app URL
     "http://localhost:5173",  # FastAPI app URL
     # mistral api called by the mistral package
-    "https://api.mistral.ai/v1/chat/completions"
+    "https://api.mistral.ai/v1/chat/completions",
     "https://jib.nu"  # URL to EC2
 ]
 

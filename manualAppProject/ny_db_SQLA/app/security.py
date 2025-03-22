@@ -155,3 +155,20 @@ def get_current_token(
     """
     token = verify_token_access(token_str=token, db=db)
     return token
+
+
+def get_admin_or_partner_user(
+    current_user: Annotated[Users, Depends(get_current_user)],
+) -> Users:
+    """
+    Dependency that verifies the current user is either an admin or a partner.
+    Returns the user object if the user has appropriate permissions,
+    otherwise raises an HTTP 403 Forbidden exception.
+    """
+    if not (current_user.is_admin or current_user.is_partner):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized. Admin or partner privileges required.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return current_user

@@ -1,17 +1,13 @@
-# här skapar vi våra tabeller
-
 from datetime import datetime, timezone
 import uuid
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func, UUID
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, func, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import Column, String, DateTime, ForeignKey
+from sqlalchemy import String, DateTime, ForeignKey
 from sqlalchemy.sql import func
-# from ..database import Base - tar bort den claude föreslog men jag tror inte den behövs
-
-# här lägger vi en id kolumn som ärvs av alla klasser och läggs till alla tabeller. Tabellerna skapas med ORM, som använder declarative base
 
 
+# id kolumn som ärvs av alla klasser och läggs till alla tabeller.
 class Base(DeclarativeBase):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID, primary_key=True, default=uuid.uuid4)
@@ -30,6 +26,7 @@ class Users(Base):
     # Auth
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     is_partner: Mapped[bool] = mapped_column(Boolean, default=False)
+    deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     tokens: Mapped[list["Tokens"]] = relationship(back_populates="users")
     user_file_displays: Mapped[list["UserFileDisplays"]
                                ] = relationship(back_populates="users")
@@ -42,7 +39,7 @@ class Users(Base):
         return f"<Users={self.first_name}>"
 
 
-class Tokens(Base):  # ändra till Tokens vid tillfälle
+class Tokens(Base):
     __tablename__ = "tokens"
 
     created: Mapped[datetime] = mapped_column(
@@ -52,20 +49,23 @@ class Tokens(Base):  # ändra till Tokens vid tillfälle
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     users: Mapped["Users"] = relationship(back_populates="tokens")
 
- # ny för att ladda upp filer, egen design
 
-
-# ändra till Manuals hette tidigare FileUploads, modelnumber hette modelnumber_1 och modelname hette modelnumber_2 vid tillfälle eller byta namn det här är just listningen av manualer....
 class Manuals(Base):
     __tablename__ = "manuals"
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     url_to_file: Mapped[str] = mapped_column(String(2048), nullable=False)
-    brand: Mapped[str] = mapped_column(String(255), nullable=False)
+    # brand: Mapped[str] = mapped_column(String(255), nullable=False)
     modelnumber: Mapped[str] = mapped_column(String(255), nullable=False)
     modelname: Mapped[str] = mapped_column(String(255), nullable=False)
-    device_type: Mapped[str] = mapped_column(String(255), nullable=False)
+    device_type_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("device_types.id"), nullable=False)
+    brand_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("brands.id"), nullable=False)
+
+    deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+    # device_type: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[str] = mapped_column(
-        String(255), nullable=False)  # pending, completed, failed
+        String(255), nullable=False)  # pending, completed, failed, deleted
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now())
     completed_at: Mapped[datetime] = mapped_column(
@@ -75,8 +75,37 @@ class Manuals(Base):
                                ] = relationship(back_populates="manuals")
     users: Mapped["Users"] = relationship(back_populates="manuals")
 
+    device_type: Mapped["DeviceTypes"] = relationship(
+        back_populates="manuals")
+    brand: Mapped["Brands"] = relationship(back_populates="manuals")
+
     def __repr__(self):
-        return f"<Manuals={self.brand}, {self.modelnumber_1}, {self.device_type}>"
+        return f"<Manuals={self.brand}, {self.modelnumber}, {self.device_type}>"
+
+
+class DeviceTypes(Base):
+    __tablename__ = "device_types"
+
+    type: Mapped[str] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now())
+    manuals: Mapped[list["Manuals"]] = relationship(
+        back_populates="device_type")
+
+    def __repr__(self):
+        return f"<DeviceType={self.type}>"
+
+
+class Brands(Base):
+    __tablename__ = "brands"
+
+    name: Mapped[str] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now())
+    manuals: Mapped[list["Manuals"]] = relationship(back_populates="brand")
+
+    def __repr__(self):
+        return f"<Brand={self.name}>"
 
 
 class UserFileDisplays(Base):
@@ -92,7 +121,7 @@ class UserFileDisplays(Base):
         back_populates="user_file_displays")
 
 
-# to handle and store image of product label for further processing
+# to handle and store image of product label for further processing TA BORT
 class ProductImageUploads(Base):
     __tablename__ = "product_image_uploads"
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
