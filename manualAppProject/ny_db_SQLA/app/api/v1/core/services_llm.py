@@ -1,5 +1,32 @@
-import os
-import fitz  # PyMuPDF
+# OBS logiken för hur vi skickar in bilden behöver ev justeras
+#
+# This page contains a class DocPreProcess LLM.
+# In preprocessing to an LLM there are several steps that needs to be taken with the
+# provided manual pdf. This to ensure that the call to the llm more cost efficient and faster.
+# First step is to convert the content to markup language - is done with pymupdf4llm.
+# Next step is to ensure that if the manual is consisting of several language versions - only one
+# language version will be sent to the llm.
+# Next is to try to avoid sending the whole pdf to the llm. Rather slice it to smaler pieces - and
+# then send the most relevant ones.
+# Using the markup with ### ## # ##### we can identify headlines in the documents. We will also decide
+# the length of the manual. We will slice the manual at the headline level that gives us slices of
+# an average of 2000 words.
+#
+# When creating an object of this class the image is passed as an argument. Then some of the methods are run
+# and their result is set at instance attributes.
+# - a list of all textlines in markup format
+# - a full table of content with all headlines listed
+# - a version of the markup list in only one language (sv or eng)
+# - a version of the table of content headline list for the one language document
+#
+# The rest of the operations needs to be administered by a main program
+# - create table of content to send to llm
+# - store table of content prioritized by llm
+# - keep track of what parts has been read by the llm and what part to send next
+# - fetch parts of the pepped markup dokument (to be sent to llm)
+#
+# the actuall call to the llm is handeled by methods in the services_llm_connection file
+
 from langdetect import DetectorFactory
 import re
 import fitz  # PyMuPDF's import name
@@ -7,15 +34,20 @@ import pymupdf4llm
 from langdetect import detect_langs
 from langdetect import DetectorFactory
 from exceptions import LanguageError
-# Load from a file path
+import io
+
+# Or load from bytes (e.g., from S3)
+# pdf_bytes = s3_client.get_object(Bucket='my-bucket', Key='document.pdf')['Body'].read()
+# doc = fitz.open(stream=pdf_bytes, filetype="pdf")
 
 
 class DocPreProcessLLM:
-    def __init__(self, pdf_url="dummy_images/samsung_tv_multi_lang.pdf"):
+    def __init__(self,  pdf_url="dummy_images/samsung_tv_multi_lang.pdf", is_remote_url=False):
         self.pdf_url = pdf_url
+        self.is_remote_url = is_remote_url
         self.markup_all_text = self.create_markup_text()  # lines in a list
         self.markup_all_headlines = self.generate_toc(self.markup_all_text)
-        self.markup_one_lang_text = self.extract_language_content()
+        self.markup_one_lang_text = self.extract_language_content()  # a list of dictionaries
         self.language_used = str  # language en or sv
         # stores all headlines from self.markup_one_lang_text
         self.markup_headlines_one_lang = self.generate_toc(
@@ -27,30 +59,43 @@ class DocPreProcessLLM:
         # self.markup_selected_language =
 
     def print_md_text(self, md_text):
+        """Function that can be used to print out the mardup document"""
         print(md_text)
 
-    # Or load from bytes (e.g., from S3)
-    # pdf_bytes = s3_client.get_object(Bucket='my-bucket', Key='document.pdf')['Body'].read()
-    # doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-
     def create_markup_text(self):
+        """Creates a markup text of the image given as a parameter when instancing the object
+        file Returns: a list of strings. one string for each row in the document."""
 
-        # Load the PDF document
-        # pdf_path = "your_document.pdf"
-        doc = fitz.open(self.pdf_url)
+        try:
+            # Load the PDF document
+            if self.is_remote_url:
+                # Handle remote URL
+                import requests
+                response = requests.get(self.pdf_url)
+                if response.status_code != 200:
+                    raise Exception(
+                        f"Failed to download PDF: {response.status_code}")
 
-        # Convert to markdown
-        markdown_text = pymupdf4llm.to_markdown(doc)
+                pdf_bytes = io.BytesIO(response.content)
+                doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+            else:
+                # Handle local file
+                doc = fitz.open(self.pdf_url)
 
-        # Store in your class variable
+            # Convert to markdown
+            markdown_text_raw = pymupdf4llm.to_markdown(doc)
+            markdown_text = self.clean_up_markdown(markdown_text_raw)
 
-        # Now you can split into lines if needed
-        text_lines = self.markdown_text.split('\n')
+            # Store in your class variable
+            self.markdown_text = markdown_text
 
-        return text_lines
+            # Now you can split into lines if needed
+            text_lines = self.markdown_text.split('\n')
 
-    # Set seed for reproducible language detection results
-    DetectorFactory.seed = 0
+            return text_lines
+        except Exception as e:
+            print(f"Error creating markup text: {str(e)}")
+            raise
 
     def extract_language_content(self):
         """
@@ -71,31 +116,41 @@ class DocPreProcessLLM:
         Raises:
           language error if neither swedish or english is present in the document
         """
+
+        # Set seed for reproducible language detection results
+        # DetectorFactory.seed = 0
+
+        markup_one_lang_text = []  # Initialize local variable
         lang_result = []
-        for headline_no in len(self.markup_all_headlines):
+
+        for headline_no in range(len(self.markup_all_headlines)):
             line_start = self.markup_all_headlines[headline_no]["line"]
             line_end = self.markup_all_headlines[headline_no+1]["line"]-1
             text_to_check = "\n".join(
                 self.markup_all_headlines[line_start:line_end])
             lang_check = detect_langs(text_to_check)
-            lang_result.append(
-                [line_start, line_end, lang_check.lang, lang_check.prob])
+            if lang_check:  # Make sure the list isn't empty
+                top_lang = lang_check[0]  # Get the most probable language
+                lang_result.append(
+                    [line_start, line_end, top_lang.lang, top_lang.prob])
 
         for analys in lang_result:
             if analys[2] == "sv":
                 for line in self.markup_all_headlines[line_start:line_end]:
-                    self.markup_one_lang_text.append(line)
+                    markup_one_lang_text.append(line)
                     self.language_used = "sv"
             elif analys[2] == "en":
                 for line in self.markup_all_headlines[line_start:line_end]:
-                    self.markup_one_lang_text.append(line)
+                    markup_one_lang_text.append(line)
                     self.language_used = "en"
             else:
                 raise LanguageError
 
-    def clean_up_markdown(text):
+        return markup_one_lang_text  # Return the list
+
+    def clean_up_markdown(self, text):
         """
-        Clean up the extracted markdown to make it more readable
+        Clean up the extracted markdown to make it more readable. Support function for create_markup_text.
         """
         # Remove multiple consecutive empty lines
         text = re.sub(r'\n{3,}', '\n\n', text)
@@ -108,7 +163,7 @@ class DocPreProcessLLM:
 
         return text
 
-    def count_markdown_headings(markdown_text):
+    def count_markdown_headings(self, markdown_text):
         """
         Count the number of headings at each level (# through ######) in a markdown document.
 
@@ -156,7 +211,7 @@ class DocPreProcessLLM:
 
         return heading_counts
 
-    def count_words(markdown_text):
+    def count_words(self, markdown_text):
         """
         Count the number of words in a markdown document.
 

@@ -9,24 +9,119 @@
 
 from app.security import get_current_user
 from app.api.v1.core.models import Users, UserFileDisplays, Manuals, Brands, DeviceTypes
-from app.api.v1.core.schemas import RegisterForm, LoginForm
+from app.api.v1.core.schemas import LoginForm, DeleteManualRequest, DeleteManualResponse
 from app.api.v1.core.services import check_for_partial_match, check_for_perfect_match, validate_content_in_image
+from app.api.v1.core.services_upload import get_manual_url_for_download
+
 from app.db_setup import get_db, get_s3_client
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status, Form, File, UploadFile
-from sqlalchemy import func, delete, insert, select, update, or_
-from sqlalchemy.orm import Session, joinedload, selectinload
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
-from app.security import get_current_user, get_admin_or_partner_user
-from app.settings import Settings
-from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, status, Form, File, UploadFile, Body
+from sqlalchemy import func, delete, insert, select, update, distinct
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
+from app.security import get_current_user
+from app.settings import settings
 
 from app.api.v1.core.models import Users, UserFileDisplays, Manuals
-from app.db_setup import get_db
-from app.security import get_current_user, get_admin_or_partner_user
+from app.db_setup import get_db, get_s3_client
+from app.security import get_current_user
 from uuid import UUID
-
+import boto3
+from typing import Dict, Any
 
 router = APIRouter(tags=["gen"], prefix="/gen")
+
+
+@router.get("/dashboard/statistics", response_model=Dict[str, Any])
+def get_dashboard_statistics(
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get dashboard statistics for partner users.
+    Returns counts of users who selected manuals, uploaded manuals, total selections,
+    and most popular manuals.
+    """
+    # Check if user is a partner
+    if not current_user.is_partner:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only partner users can access this endpoint"
+        )
+
+    # Get manuals uploaded by the partner
+    manuals_stmt = select(func.count()).select_from(Manuals).where(
+        Manuals.user_id == current_user.id,
+        Manuals.deleted == False,
+        Manuals.status == "completed"
+    )
+    manuals_uploaded_count = db.scalar(manuals_stmt) or 0
+
+    # Get the number of users who selected partner's manuals
+    users_stmt = select(
+        func.count(distinct(UserFileDisplays.user_id))
+    ).join(
+        Manuals, UserFileDisplays.file_id == Manuals.id
+    ).where(
+        Manuals.user_id == current_user.id,
+        UserFileDisplays.remove_from_view == False
+    )
+    users_selected_count = db.scalar(users_stmt) or 0
+
+    # Get total number of selections of partner's manuals
+    selections_stmt = select(
+        func.count(UserFileDisplays.id)
+    ).join(
+        Manuals, UserFileDisplays.file_id == Manuals.id
+    ).where(
+        Manuals.user_id == current_user.id,
+        UserFileDisplays.remove_from_view == False
+    )
+    total_selections_count = db.scalar(selections_stmt) or 0
+
+    # Get most popular manuals (by number of selections)
+    popular_stmt = select(
+        Manuals.id,
+        Brands.name.label("brand"),
+        Manuals.modelname,
+        DeviceTypes.type.label("device_type"),
+        func.count(UserFileDisplays.id).label("selection_count")
+    ).join(
+        UserFileDisplays, Manuals.id == UserFileDisplays.file_id
+    ).join(
+        Brands, Manuals.brand_id == Brands.id
+    ).join(
+        DeviceTypes, Manuals.device_type_id == DeviceTypes.id
+    ).where(
+        Manuals.user_id == current_user.id,
+        UserFileDisplays.remove_from_view == False
+    ).group_by(
+        Manuals.id,
+        Brands.name,
+        Manuals.modelname,
+        DeviceTypes.type
+    ).order_by(
+        func.count(UserFileDisplays.id).desc()
+    ).limit(10)
+
+    most_popular_manuals_result = db.execute(popular_stmt).all()
+
+    most_popular_manuals = [
+        {
+            "id": str(manual.id),
+            "brand": manual.brand,
+            "modelname": manual.modelname,
+            "device_type": manual.device_type,
+            "selection_count": manual.selection_count
+        }
+        for manual in most_popular_manuals_result
+    ]
+
+    return {
+        "users_selected_count": users_selected_count,
+        "manuals_uploaded_count": manuals_uploaded_count,
+        "total_selections_count": total_selections_count,
+        "most_popular_manuals": most_popular_manuals
+    }
 
 
 @router.post("/list_user_manuals", status_code=201)
@@ -79,6 +174,54 @@ def list_user_manuals(current_user: Users = Depends(get_current_user), db: Sessi
         raise HTTPException(
             status_code=500, detail=f"Error executing query: {str(e)}"
         )
+
+
+@router.delete("/delete_user_manual_favourite")
+def delete_user_manual(
+    file_id: str,  # Query parameter
+    hard_delete: bool = False,  # Optional query parameter with default value
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    """
+    Delete a manual entry from the user's collection
+
+    This endpoint will either mark the entry as removed from view
+    or completely delete it from the database
+    """
+    # Ensure the user is authenticated
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required"
+        )
+
+    # Check if the manual exists and belongs to the current user
+    from sqlalchemy import select
+    stmt = select(UserFileDisplays).where(
+        UserFileDisplays.file_id == file_id,  # Use the query parameter
+        UserFileDisplays.user_id == current_user.id
+    )
+    result = db.execute(stmt)
+    user_manual = result.scalar_one_or_none()
+
+    if not user_manual:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Manual not found or doesn't belong to current user"
+        )
+
+    if hard_delete:
+        # Complete deletion from database
+        db.delete(user_manual)
+    else:
+        # Soft deletion (mark as removed from view)
+        user_manual.remove_from_view = True
+        db.add(user_manual)
+
+    db.commit()
+
+    return {"success": True, "message": "Manual successfully removed"}
 
 
 @router.post("/unmark_manual_deleted/{manual_id}", status_code=200)
@@ -176,74 +319,6 @@ def list_user_uploaded_manuals(current_user: Users = Depends(get_current_user), 
             status_code=500, detail=f"Error executing query: {str(e)}")
 
 
-@router.post("/list_all_manuals", status_code=200)  # ta bort?? for partners
-def list_all_manuals(current_user: Users = Depends(get_current_user), db: Session = Depends(get_db)):
-    """An endpoint that returns all manuals with a count of how many users have tagged each manual.
-    Only accessible by admin or partner users."""
-
-    # Check if user is an admin or partner
-    if not (current_user.is_admin or current_user.is_partner):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized. Admin or partner access required."
-        )
-
-    try:
-        # Get all manuals with user count using a subquery
-        subquery = (
-            select(
-                UserFileDisplays.file_id,
-                func.count(UserFileDisplays.user_id).label("user_count")
-            )
-            .where(UserFileDisplays.remove_from_view == False)
-            .group_by(UserFileDisplays.file_id)
-            .subquery()
-        )
-
-        # Main query to join with the subquery
-        stmt = (
-            select(
-                Manuals.id,
-                Brands.name.label("brand_name"),
-                DeviceTypes.type.label("device_type_name"),
-                Manuals.modelnumber,
-                Manuals.modelname,
-                Manuals.status,
-                func.coalesce(subquery.c.user_count, 0).label("user_count")
-            )
-            .join(Brands, Manuals.brand_id == Brands.id)  # Join using brand_id
-            # Join using device_type_id
-            .join(DeviceTypes, Manuals.device_type_id == DeviceTypes.id)
-            .outerjoin(subquery, Manuals.id == subquery.c.file_id)
-            .where(Manuals.status != "deleted")
-            # Add this line to filter by current user
-            .where(Manuals.user_id == current_user.id)
-            .order_by(Brands.name, DeviceTypes.type)
-        )
-
-        result = db.execute(stmt).all()
-
-        # Format the results
-        manuals_list = []
-        for manual in result:
-            manuals_list.append({
-                "id": manual.id,
-                "brand": manual.brand_name,  # Rename this field
-                "device_type": manual.device_type_name,  # Rename this field
-                "modelnumber": manual.modelnumber,
-                "modelname": manual.modelname,
-                "status": manual.status,
-                "user_count": manual.user_count
-            })
-
-        return {"manuals": manuals_list}
-
-    except SQLAlchemyError as e:
-        print(f"PostgreSQL error {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Error executing query: {str(e)}")
-
-
 @router.post("/mark_manual_deleted/{manual_id}", status_code=200)
 def mark_manual_deleted(
     manual_id: UUID,
@@ -288,232 +363,32 @@ def mark_manual_deleted(
             status_code=500, detail=f"Error updating manual: {str(e)}")
 
 
-@router.get("/dashboard/statistics", status_code=200)
-def get_dashboard_statistics(
-    current_user: Users = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """An endpoint that returns statistics for the partner dashboard:
-    1. Number of users who have selected manuals uploaded by the current user
-    2. Total number of manuals uploaded by the current user
-    3. Total number of selections of the current user's manuals
-    4. List of most popular manuals uploaded by the user (by selection count)
-    """
-    try:
-        # Get all manuals uploaded by the current user
-        stmt = (
-            select(Manuals.id)
-            .where(
-                Manuals.user_id == current_user.id,
-                Manuals.status != "deleted"
-            )
-        )
-        user_manual_ids_result = db.execute(stmt)
-        user_manual_ids = [row[0] for row in user_manual_ids_result.fetchall()]
-
-        # If the user has no manuals, return empty stats
-        if not user_manual_ids:
-            return {
-                "users_selected_count": 0,
-                "manuals_uploaded_count": 0,
-                "total_selections_count": 0,
-                "most_popular_manuals": []
-            }
-
-        # Count total manuals uploaded by the user
-        manuals_uploaded_count = len(user_manual_ids)
-
-        # Count distinct users who have selected these manuals
-        distinct_users_query = (
-            select(func.count(func.distinct(UserFileDisplays.user_id)))
-            .where(
-                UserFileDisplays.file_id.in_(user_manual_ids),
-                UserFileDisplays.remove_from_view == False
-            )
-        )
-        users_selected_count_result = db.execute(distinct_users_query)
-        users_selected_count = users_selected_count_result.scalar() or 0
-
-        # Count total selections (not distinct users)
-        total_selections_query = (
-            select(func.count())
-            .where(
-                UserFileDisplays.file_id.in_(user_manual_ids),
-                UserFileDisplays.remove_from_view == False
-            )
-        )
-        total_selections_result = db.execute(total_selections_query)
-        total_selections_count = total_selections_result.scalar() or 0
-
-        # Get the top 5 most popular manuals (by selection count)
-        popular_manuals_query = (
-            select(
-                Manuals.id,
-                Brands.name.label("brand"),  # Get brand name from Brands table
-                Manuals.modelnumber,
-                Manuals.modelname,
-                # Get device type from DeviceTypes table
-                DeviceTypes.type.label("device_type"),
-                func.count(UserFileDisplays.id).label("selection_count")
-            )
-            .join(
-                UserFileDisplays,
-                UserFileDisplays.file_id == Manuals.id
-            )
-            .join(
-                Brands,
-                Manuals.brand_id == Brands.id  # Join with Brands table
-            )
-            .join(
-                DeviceTypes,
-                Manuals.device_type_id == DeviceTypes.id  # Join with DeviceTypes table
-            )
-            .where(
-                Manuals.user_id == current_user.id,
-                Manuals.status != "deleted",
-                UserFileDisplays.remove_from_view == False
-            )
-            .group_by(Manuals.id, Brands.name, DeviceTypes.type)
-            .order_by(func.count(UserFileDisplays.id).desc())
-            .limit(5)
-        )
-
-        popular_manuals_result = db.execute(popular_manuals_query)
-
-        popular_manuals = []
-        for row in popular_manuals_result.fetchall():
-            popular_manuals.append({
-                "id": row.id,
-                "brand": row.brand,
-                "modelnumber": row.modelnumber,
-                "modelname": row.modelname,
-                "device_type": row.device_type,
-                "selection_count": row.selection_count
-            })
-
-        return {
-            "users_selected_count": users_selected_count,
-            "manuals_uploaded_count": manuals_uploaded_count,
-            "total_selections_count": total_selections_count,
-            "most_popular_manuals": popular_manuals
-        }
-
-    except SQLAlchemyError as e:
-        print(f"Database error: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Error executing query: {str(e)}"
-        )
-
-
-@router.get("/get-download-url/{file_id}")
-async def get_download_url(
-    file_id: int,
+@router.get("/get_download_url/{file_id}")
+def get_download_url(
+    file_id: str,
     db: Session = Depends(get_db),
-    s3_client=Depends(get_s3_client),
     current_user=Depends(get_current_user)
 ):
-    """file_id läggs till urlen i endpointen, returnar en download url"""
-    # Get file record from database
-    file_upload = db.query(Manuals).filter(
-        Manuals.id == file_id,
-        Manuals.user_id == current_user.id
-    ).first()
-
-    if not file_upload:
-        raise HTTPException(status_code=404, detail="File not found")
-
-    # Generate a presigned GET URL
+    """Returns a download URL for the specified file in the format {"downloadUrl": download_url} """
     try:
-        download_url = s3_client.generate_presigned_url(
-            'get_object',
-            Params={
-                'Bucket': Settings.S3_BUCKET,
-                'Key': file_upload.s3_key
-            },
-            ExpiresIn=3600  # 1 hour expiration
+        # Make sure to pass all required parameters to the function
+        url = get_manual_url_for_download(
+            file_id=file_id,
+            current_user=current_user,
+            db=db
         )
+        return url
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    return {"downloadUrl": download_url}
-
-
-@router.post("/search/words_only")
-async def search_for_manual(
-    brand_id: str,
-    device_type_id: str,
-    modelnumber: str = "",  # Optional parameter with default value
-    modelname: str = "",    # Optional parameter with default value
-    db: Session = Depends(get_db),
-):
-    try:
-        # Only add non-empty search words
-        search_words = []
-        if modelnumber and modelnumber.strip():
-            search_words.append(modelnumber)
-        if modelname and modelname.strip():
-            search_words.append(modelname)
-
-        if not search_words:
-            raise HTTPException(
-                status_code=400,
-                detail="At least one of 'modelnumber' or 'modelname' must be provided"
-            )
-        result = check_for_perfect_match(
-            search_words, device_type_id, brand_id, db)
-        if not result:
-            result = check_for_partial_match(
-                search_words, device_type_id, brand_id, db)
-            if not result:
-                print("no semi match")
-                raise HTTPException(
-                    status_code=404, detail="No manuals found")
-
-        return {"manuals": result}  # Consistent return structure
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/search/with_image")
-async def search_for_manual(
-    image: UploadFile = File(...),
-    brand_id: str = Form(...),
-    device_type_id: str = Form(...),
-    db: Session = Depends(get_db),
-):
-    """Searches with an uploaded image in the table Manuals by 
-        input: image, modelnumber, modelname, brand, device_type, 
-        returns: a list of dictionaries containing entries from the Manuals table 
-        brand: match.brand,
-        device_type: match.device_type,
-        model_numbers: match.modelnumber,
-        modelname: match.modelname,
-        file_id: match.id,
-        match: "perfect match,
-        (the image is currently not stored in the S3, its passed directly to the functions)
-        """
-    image_temp = await image.read()
-    search_words = validate_content_in_image(image_temp)
-
-    try:
-        result = check_for_perfect_match(
-            search_words, device_type_id, brand_id, db)
-        if not result:
-            result = check_for_partial_match(
-                search_words, device_type_id, brand_id, db)
-            if not result:
-                raise HTTPException(
-                    status_code=404, detail="No manuals found")
-
-        return {"manuals": result}  # Consistent return structure
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Log the error
+        print(f"Error getting download URL: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get download URL: {str(e)}"
+        )
 
 
 @router.get("/list_all_brands")
-def list_all_brands(current_user: Users = Depends(get_current_user), db: Session = Depends(get_db)):
+def list_all_brands(db: Session = Depends(get_db)):
     """An endpoint that returns all brands listed in the brands table"""
     try:
         # Query to get all manuals uploaded by the current user
@@ -544,7 +419,7 @@ def list_all_brands(current_user: Users = Depends(get_current_user), db: Session
 
 
 @router.get("/list_all_device_types")
-def list_all_device_types(current_user: Users = Depends(get_current_user), db: Session = Depends(get_db)):
+def list_all_device_types(db: Session = Depends(get_db)):
     """An endpoint that returns all brands listed in the brands table"""
     try:
         # Query to get all manuals uploaded by the current user
@@ -572,3 +447,89 @@ def list_all_device_types(current_user: Users = Depends(get_current_user), db: S
         print(f"Database error: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Error executing query: {str(e)}")
+
+
+@router.post("/search/words_only")
+def search_for_manual(
+    brand_id: str,
+    device_type_id: str,
+    modelnumber: str = "",  # Optional parameter with default value
+    modelname: str = "",    # Optional parameter with default value
+    db: Session = Depends(get_db),
+):
+    """Takes in parameters brand_id, and device_type - from dropdowns in frontend. together with
+    search queries for either model number or model name. 
+    returns: a dictionary of a list of dictionaries - whith perfect or partial matches. The manual dictionary includes
+    {
+            "brand_id": manual.brand_id,
+            "device_type_id": manual.device_type_id,
+            "model_numbers": manual.modelnumber,
+            "modelname": manual.modelname,
+            "file_id": manual.id,
+            "match": f"partial match ({similarity:.2f})",
+        }
+    """
+    try:
+        # Only add non-empty search words
+        search_words = []
+        if modelnumber and modelnumber.strip():
+            search_words.append(modelnumber)
+        if modelname and modelname.strip():
+            search_words.append(modelname)
+
+        if not search_words:
+            raise HTTPException(
+                status_code=400,
+                detail="At least one of 'modelnumber' or 'modelname' must be provided"
+            )
+        result = check_for_perfect_match(
+            search_words, device_type_id, brand_id, db)
+        if not result:
+            result = check_for_partial_match(
+                search_words, device_type_id, brand_id, db)
+            if not result:
+                print("no semi match")
+                raise HTTPException(
+                    status_code=404, detail="No manuals found")
+
+        return {"manuals": result}  # Consistent return structure
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/search/with_image")
+def search_for_manual(
+    image: UploadFile = File(...),
+    brand_id: str = Form(...),
+    device_type_id: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    """Searches with an uploaded image in the table Manuals by 
+        input: image, modelnumber, modelname, brand, device_type, 
+        returns: a list of dictionaries containing entries from the Manuals table 
+        brand: match.brand,
+        device_type: match.device_type,
+        model_numbers: match.modelnumber,
+        modelname: match.modelname,
+        file_id: match.id,
+        match: "perfect match,
+        (the image is currently not stored in the S3, its passed directly to the functions)
+        """
+    image_temp = image.file.read()
+    search_words = validate_content_in_image(image_temp)
+
+    try:
+        result = check_for_perfect_match(
+            search_words, device_type_id, brand_id, db)
+        if not result:
+            result = check_for_partial_match(
+                search_words, device_type_id, brand_id, db)
+            if not result:
+                raise HTTPException(
+                    status_code=404, detail="No manuals found")
+
+        return {"manuals": result}  # Consistent return structure
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

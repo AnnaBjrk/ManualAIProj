@@ -114,10 +114,10 @@ const LoginForm = ({ onLoginSuccess }) => {
                         name="email" //kolla denna
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500"
+                        className="mt-1 px-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 font-['Barlow_Condensed']"
                     />
                     {emailError.map((error, index) => (
-                        <p key={index} className="text-red-700 text-sm mt-1">{error}</p>
+                        <p key={index} className="text-amber-700 text-sm mt-1">{error}</p>
                     ))}
                 </div>
                 <div>
@@ -130,7 +130,7 @@ const LoginForm = ({ onLoginSuccess }) => {
                         name="password" //kolla denna
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500"
+                        className="mt-1 px-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 font-['Barlow_Condensed']"
                     />
                     {passwordError.map((error, index) => (
                         <p key={index} className="text-red-700 text-sm mt-1">{error}</p>
@@ -141,7 +141,7 @@ const LoginForm = ({ onLoginSuccess }) => {
                 )}
                 <button
                     type="submit"
-                    className="w-full bg-amber-700 font-['Neucha'] text-white py-2 px-4 rounded-md hover:bg-amber-600 transition-colors"
+                    className="w-full bg-amber-600 font-['Neucha'] text-white py-2 px-4 rounded-md hover:bg-amber-700 transition-colors"
                 >
                     Skicka
                 </button>

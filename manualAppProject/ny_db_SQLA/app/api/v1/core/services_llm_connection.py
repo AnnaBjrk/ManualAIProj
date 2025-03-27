@@ -1,37 +1,39 @@
+
 from mistralai import Mistral
 from app.settings import settings
 from .models import Manuals
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status, Form, File, UploadFile
+from fastapi import HTTPException
+
 
 # fixa så att denna funkar med båda endpoints både den som hämtar manualen direkt och den som kör en
 # llm fråga
 
 
-def get_manual_upload_url(file_id: int, db, s3_client, current_user):
-    """takes the parameter file_id, Returns: a download url to the s3 bucket
-    In parameter file_id. Returns the upload url_from the S3 Bucket"""
-    # Get file record from database
-    file_upload = db.query(Manuals).filter(
-        Manuals.id == file_id
-    ).first()
+# def get_manual_upload_url(file_id: int, db, s3_client, current_user):
+#     """takes the parameter file_id, Returns: a download url to the s3 bucket
+#     In parameter file_id. Returns the upload url_from the S3 Bucket"""
+#     # Get file record from database
+#     file_upload = db.query(Manuals).filter(
+#         Manuals.id == file_id
+#     ).first()
 
-    if not file_upload:
-        raise HTTPException(status_code=404, detail="File not found")
+#     if not file_upload:
+#         raise HTTPException(status_code=404, detail="File not found")
 
-    # Generate a presigned GET URL
-    try:
-        download_url = s3_client.generate_presigned_url(
-            'get_object',
-            Params={
-                'Bucket': settings.S3_BUCKET,
-                'Key': file_upload.s3_key
-            },
-            ExpiresIn=3600  # 1 hour expiration
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+#     # Generate a presigned GET URL
+#     try:
+#         download_url = s3_client.generate_presigned_url(
+#             'get_object',
+#             Params={
+#                 'Bucket': settings.S3_BUCKET,
+#                 'Key': file_upload.s3_key
+#             },
+#             ExpiresIn=3600  # 1 hour expiration
+#         )
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
-    return {"downloadUrl": download_url}
+#     return {"downloadUrl": download_url}
 
 
 def create_prompt(retrieved_chunk, question):
@@ -74,9 +76,10 @@ def get_llm_answer(retrieved_chunk, question):
     mistral_answer = run_mistral(client, prompt, model)
     return mistral_answer
 
+# osäker vad detta är....
 # chat_response = client.chat.complete(
-#     model= model,
-#     messages = [
+#     model=model,
+#     messages=[
 #         {
 #             "role": "user",
 #             "content": "What is the best French cheese?",

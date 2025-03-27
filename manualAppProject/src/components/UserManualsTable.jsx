@@ -2,82 +2,80 @@ import React, { useState, useEffect } from "react";
 import { Trash2 } from 'lucide-react';
 import { Download } from 'lucide-react';
 
-const handleDownload = async (fileId) => {
-    try {
-        // Optional: Show loading state
-        // setIsLoading(true);
+const handleDownload = (fileId) => {
+    // Get authentication token
+    const accessToken = localStorage.getItem('access_token');
+    const tokenType = localStorage.getItem('token_type');
 
-        // Call the API to get the download URL
-        const response = await fetch(`/api/get-download-url/${fileId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                // Include authentication headers if needed
-                // 'Authorization': `Bearer ${yourAuthToken}`
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error(`Error: ${response.status}`);
-        }
-
-        // Parse the JSON response
-        const data = await response.json();
-
-        // open in new tab
-        window.open(data.downloadUrl, '_blank');
-
-    } catch (error) {
-        console.error('Failed to get download URL:', error);
-        // Handle the error - show a notification to the user
-        // setError('Failed to download the manual');
-    } finally {
-        // setIsLoading(false);
+    if (!accessToken) {
+        console.error("No authentication token found in localStorage");
+        return;
     }
+
+    const authHeader = `${tokenType} ${accessToken}`;
+
+    // Call the API to get the download URL - use the actual backend endpoint path
+    fetch(`${import.meta.env.VITE_API_URL}/v1/gen/get_download_url/${fileId}`, {
+        method: 'GET',
+        headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json',
+        },
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Open in new tab or start download directly
+            window.open(data.downloadUrl, '_blank');
+        })
+        .catch(error => {
+            console.error('Failed to get download URL:', error);
+        });
 };
 
 const UserManualsTable = () => {
     const [manuals, setManuals] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [apiResponse, setApiResponse] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const fetchManuals = () => {
+        setLoading(true);
+
+        // Get token from localStorage
+        const accessToken = localStorage.getItem('access_token');
+        const tokenType = localStorage.getItem('token_type');
+
+        if (!accessToken) {
+            setError("No authentication token found in localStorage");
+            setLoading(false);
+            return;
+        }
+
+        // Use token_type (bearer) + access_token for the Authorization header
+        const authHeader = `${tokenType} ${accessToken}`;
 
 
 
-    useEffect(() => {
-        const fetchManuals = async () => {
-            try {
-                setLoading(true);
+        const apiUrl = `${import.meta.env.VITE_API_URL}/v1/gen/list_user_manuals`;
+        console.log("Making request to:", apiUrl);
 
-                // Get token from localStorage
-                const accessToken = localStorage.getItem('access_token');
-                const tokenType = localStorage.getItem('token_type');
 
-                if (!accessToken) {
-                    throw new Error("No authentication token found in localStorage");
-                }
 
-                // Use token_type (bearer) + access_token for the Authorization header
-                const authHeader = `${tokenType} ${accessToken}`;
-
-                // Use the correct path based on your API structure
-                // The router is defined with prefix="/gen" and the app includes the router with prefix="/v1"
-                const apiUrl = `${import.meta.env.VITE_API_URL}/v1/gen/list_user_manuals`;
-                console.log("Making request to:", apiUrl);
-
-                const response = await fetch(apiUrl, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": authHeader,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({})
-                });
-
+        fetch(apiUrl, {
+            method: "POST",
+            headers: {
+                "Authorization": authHeader,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({})
+        })
+            .then(response => {
                 console.log("API response status:", response.status);
-
-                console.log("Authentication:", authHeader.replace(/^Bearer (.{5}).*$/, 'Bearer $1...'));
-                console.log("Response headers:", Object.fromEntries([...response.headers.entries()]));
 
                 // Handle 404 as an empty result, not an error
                 if (response.status === 404) {
@@ -85,49 +83,125 @@ const UserManualsTable = () => {
                     setManuals([]);
                     setError(null);
                     setLoading(false);
-                    return;
+                    return null;
                 }
 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    let errorMessage = `Error: ${response.status} ${response.statusText}`;
+                    return response.text().then(errorText => {
+                        let errorMessage = `Error: ${response.status} ${response.statusText}`;
 
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        if (errorData.detail) {
-                            errorMessage = errorData.detail;
+                        try {
+                            const errorData = JSON.parse(errorText);
+                            if (errorData.detail) {
+                                errorMessage = errorData.detail;
+                            }
+                        } catch (e) {
+                            // If the error response isn't JSON, use the text as is
+                            if (errorText) {
+                                errorMessage = errorText;
+                            }
                         }
-                    } catch (e) {
-                        // If the error response isn't JSON, use the text as is
-                        if (errorText) {
-                            errorMessage = errorText;
-                        }
+
+                        throw new Error(errorMessage);
+                    });
+                }
+
+                return response.json();
+            })
+            .then(data => {
+                if (data) {
+                    console.log("API response data:", data);
+
+                    if (!data.manuals) {
+                        console.warn("Response doesn't contain a 'manuals' property:", data);
+                        setManuals([]);
+                    } else {
+                        setManuals(data.manuals);
                     }
 
-                    throw new Error(errorMessage);
+                    setError(null);
                 }
-
-                const data = await response.json();
-                console.log("API response data:", data);
-
-                if (!data.manuals) {
-                    console.warn("Response doesn't contain a 'manuals' property:", data);
-                    setManuals([]);
-                } else {
-                    setManuals(data.manuals);
-                }
-
-                setError(null);
-            } catch (err) {
+            })
+            .catch(err => {
                 console.error("Error fetching manuals:", err);
                 setError(err.message || "Failed to fetch manuals");
-            } finally {
+            })
+            .finally(() => {
                 setLoading(false);
-            }
-        };
+            });
+    };
 
+    useEffect(() => {
         fetchManuals();
     }, []);
+
+    const handleDelete = (fileId) => {
+        if (window.confirm("Är du säker på att du vill ta bort denna manual?")) {
+            setIsDeleting(true);
+
+            // Get authentication token
+            const accessToken = localStorage.getItem('access_token');
+            const tokenType = localStorage.getItem('token_type');
+
+            if (!accessToken) {
+                setError("No authentication token found in localStorage");
+                setIsDeleting(false);
+                return;
+            }
+
+            const authHeader = `${tokenType} ${accessToken}`;
+
+            // Use query parameters instead of a request body
+            const url = `${import.meta.env.VITE_API_URL}/v1/gen/delete_user_manual_favourite?file_id=${fileId}&hard_delete=false`;
+            console.log("Sending delete request to:", url);
+
+            // Call delete endpoint with query parameters
+            fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': authHeader,
+                    'Content-Type': 'application/json'
+                }
+                // No body needed - parameters are in the URL
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(errorText => {
+                            let errorMessage = `Error: ${response.status} ${response.statusText}`;
+
+                            try {
+                                // Try to parse error as JSON
+                                const errorData = JSON.parse(errorText);
+                                if (errorData.detail) {
+                                    errorMessage = errorData.detail;
+                                }
+                            } catch (e) {
+                                // If not JSON, use the text
+                                if (errorText) {
+                                    errorMessage = errorText;
+                                }
+                            }
+
+                            throw new Error(errorMessage);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Delete successful:", data);
+                    // On success, refresh the list
+                    fetchManuals();
+                })
+                .catch(error => {
+                    console.error('Error deleting manual:', error);
+                    // Improved error handling
+                    setError(`Failed to delete manual: ${error.message || 'Unknown error'}`);
+                })
+                .finally(() => {
+                    setIsDeleting(false);
+                });
+        }
+    };
 
     if (loading) {
         return (
@@ -175,21 +249,11 @@ const UserManualsTable = () => {
                         <tbody className="divide-y divide-gray-200">
                             {manuals.map((manual, index) => (
                                 <tr key={index} className="hover:bg-gray-50">
-                                    <td className="py-3 px-4 text-sm text-gray-700 font-black font-['Barlow_Condensed']">{manual.users_own_naming || "-"}</td>
-                                    <td className="py-3 px-4 text-sm text-gray-700 font-['Barlow_Condensed']">{manual.brand || "-"}</td>
-                                    <td className="py-3 px-4 text-sm text-gray-700 font-['Barlow_Condensed']">{manual.device_type || "-"}</td>
-                                    <td className="py-3 px-4 text-sm text-gray-700 font-['Barlow_Condensed']">
-                                        <button
-                                            onClick={() => handleDownload(manual.file_id)}
-                                            // className="bg-sky-800 text-white text-sm font-['Roboto'] hover:bg-amber-900 rounded-full px-4 py-2 inline-flex items-center mr-3 transition-colors duration-200"
-                                            className=" px-1 py-1 ml-4 mb-2 w-20 font-['Neucha'] bg-sky-900 text-sm rounded-sm border-sky-700 text-amber-50 items-center hover:bg-amber-900 transition-colors duration-200"
-                                            title="Lös ett problem"
-                                        >
-                                            <span>Lös ett problem</span>
-                                        </button>
+                                    <td className="py-3 px-4 text-base text-gray-700 font-black font-['Barlow_Condensed']">{manual.users_own_naming || "-"}</td>
+                                    <td className="py-3 px-4 text-base text-gray-700 font-['Barlow_Condensed']">{manual.brand || "-"}</td>
+                                    <td className="py-3 px-4 text-base text-gray-700 font-['Barlow_Condensed']">{manual.device_type || "-"}</td>
 
-                                    </td>
-                                    <td className="py-3 px-4 text-sm text-amber-900 hover:text-indigo-900 font-['Roboto']">
+                                    <td className="py-3 px-4 text-base text-amber-900 hover:text-indigo-900 font-['Roboto']">
 
                                         <button
                                             onClick={() => handleDownload(manual.file_id)}
@@ -203,8 +267,9 @@ const UserManualsTable = () => {
                                         </button>
 
                                         <button
-                                            onClick={() => console.log(`Remove manual ${manual.file_id}`)}
+                                            onClick={() => handleDelete(manual.file_id)}
                                             className="text-sky-800 hover:text-amber-900 inline-flex items-center relative group"
+                                            disabled={isDeleting}
                                             title="Ta bort" // Keep for screen readers
                                         >
                                             <Trash2 size={18} />

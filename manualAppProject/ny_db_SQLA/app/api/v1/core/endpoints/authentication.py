@@ -9,12 +9,13 @@ from pydantic import BaseModel
 from math import ceil
 from typing import Optional, List
 
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import func, desc, select, outerjoin, or_
 from sqlalchemy.sql.functions import coalesce
 from fastapi import FastAPI, Depends, Query, HTTPException
 from typing import Annotated
 from math import ceil
+from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.core.models import Tokens, Users, Manuals, UserFileDisplays
 from app.api.v1.core.schemas import (
@@ -95,7 +96,15 @@ def register_user(
         **user.model_dump(exclude={"password"}), password=hashed_password
     )
     db.add(new_user)
-    db.commit()
+
+    try:
+        db.commit()
+    except IntegrityError as e:
+        if 'users_email_key' in str(e):
+            raise HTTPException(
+                status_code=400, detail="Email already registered.")
+        raise
+
     return new_user
 
 # ev ta bort eller flytta
@@ -258,8 +267,12 @@ def change_admin_status(
             detail="Not authorized. Admin access required."
         )
 
-    # Find the user to modify
-    user = db.query(Users).filter(Users.id == userId).first()
+    # Find the user to modify using select statement
+    from sqlalchemy import select
+    stmt = select(Users).where(Users.id == userId)
+    result = db.execute(stmt)
+    user = result.scalar_one_or_none()
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -299,8 +312,12 @@ def change_partner_status(
             detail="Not authorized. Admin access required."
         )
 
-    # Find the user to modify
-    user = db.query(Users).filter(Users.id == userId).first()
+    # Find the user to modify using select statement
+    from sqlalchemy import select
+    stmt = select(Users).where(Users.id == userId)
+    result = db.execute(stmt)
+    user = result.scalar_one_or_none()
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -340,8 +357,12 @@ def change_delete_status(
             detail="Not authorized. Admin access required."
         )
 
-    # Find the user to modify
-    user = db.query(Users).filter(Users.id == userId).first()
+    # Find the user to modify using select statement
+    from sqlalchemy import select
+    stmt = select(Users).where(Users.id == userId)
+    result = db.execute(stmt)
+    user = result.scalar_one_or_none()
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

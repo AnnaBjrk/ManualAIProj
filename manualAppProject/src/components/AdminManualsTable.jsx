@@ -319,7 +319,8 @@ const UserManualsTable = () => {
                                             {user && user.isPartner && (
                                                 <button
                                                     onClick={() => toggleDeleteStatus(manual.id, isDeleted)}
-                                                    className={`${isDeleted ? 'bg-amber-500 hover:bg-amber-600' : 'bg-amber-600 hover:bg-amber-600'} text-white py-1 px-3 mr-4 rounded text-sm font-['Barlow_Condensed']`}
+
+                                                    className={`${isDeleted ? 'bg-amber-700 hover:bg-amber-500 ' : 'bg-amber-600 hover:bg-amber-700 transition-colors'} text-white py-1 px-3 mr-4 rounded text-sm font-['Neucha']`}
                                                 >
                                                     {isDeleted ? "Ångra radering" : "Radera"}
                                                 </button>

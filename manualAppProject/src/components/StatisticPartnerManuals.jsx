@@ -106,7 +106,8 @@ const StatisticPartnerManuals = () => {
                 <h2 className="font-['Neucha'] text-2xl">Manualstatistik</h2>
                 <button
                     onClick={fetchDashboardData}
-                    className="bg-sky-800 hover:bg-amber-900 text-white py-2 px-4 rounded flex items-center font-['Barlow_Condensed']"
+
+                    className=" px-4 py-1 ml-4 w-30 flex items-center bg-sky-900 text-base border rounded-sm text-white hover:bg-sky-800 transition-colors duration-300 font-['Neucha']"
                 >
                     <RefreshCw size={16} className="mr-2" />
                     Uppdatera

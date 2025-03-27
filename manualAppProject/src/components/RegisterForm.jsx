@@ -1,7 +1,5 @@
 import { useState } from "react";
 
-// first_name, last_name, email, password, terms_of_agreement, lägg till validering för namn. Kolla på det.
-
 export default function RegisterForm({ onLoginSuccess }) {
     const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -22,10 +20,9 @@ export default function RegisterForm({ onLoginSuccess }) {
 
     const [serverError, setServerError] = useState("");
 
-
     function validatefirstName() {
         if (!firstName.trim()) {
-            setFirstNameError(["No first name provided"]);
+            setFirstNameError(["Skriv förnamn"]);
             return false;
         } else {
             setFirstNameError([]);
@@ -35,7 +32,7 @@ export default function RegisterForm({ onLoginSuccess }) {
 
     function validatelastName() {
         if (!lastName.trim()) {
-            setLastNameError(["No last name provided"]);
+            setLastNameError(["Skriv efternamn"]);
             return false;
         } else {
             setLastNameError([]);
@@ -47,51 +44,50 @@ export default function RegisterForm({ onLoginSuccess }) {
         let emailErrors = [];
         const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!Boolean(regex.test(email))) {
-            emailErrors.push("It must be a correct email");
+            emailErrors.push("Inte en epostadress");
         }
         if (!email) {
-            emailErrors.push("Email is required");
+            emailErrors.push("Du behöver skriva e-postadress");
         }
         setEmailError(emailErrors);
+        return emailErrors.length === 0;
     }
-
 
     function validatePassword() {
         let passwordErrors = [];
-        // const regex = /[^a-zA-Z0-9]/;
-        if (password.length <= 8) {
-            passwordErrors.push("Password length must be greater than 8");
+        if (password.length < 8) {  // Changed from <= to < for proper minimum length check
+            passwordErrors.push("Lösenordet måste ha minst 8 tecken");
         }
-        // if (!Boolean(regex.test(password))) {
-        //     passwordErrors.push("Your password must contain a unique character");
-        // }
         if (!password) {
-            passwordErrors.push("Password is required");
+            passwordErrors.push("Skriv ett lösenord");
         }
         setPasswordError(passwordErrors);
+        return passwordErrors.length === 0;
     }
 
     function validateTerms() {
         if (!terms) {
-            setTermsError("You must accept our terms, OR ELSE!");
+            setTermsError("Du behöver acceptera villkoren");
+            return false;
         } else {
             setTermsError("");
+            return true;
         }
     }
+
     async function submitRegister(e) {
         e.preventDefault();
-        validatefirstName();
-        validatelastName();
-        validateEmail();
-        validatePassword();
-        validateTerms();
 
+        // Validate all fields
+        const isFirstNameValid = validatefirstName();
+        const isLastNameValid = validatelastName();
+        const isEmailValid = validateEmail();
+        const isPasswordValid = validatePassword();
+        const isTermsValid = validateTerms();
 
-
-
-        if (passwordError.length === 0 && !termsError && emailError.length === 0) {
+        // Check if all validations pass
+        if (isFirstNameValid && isLastNameValid && isEmailValid && isPasswordValid && isTermsValid) {
             try {
-
                 console.log("Sending data:", {
                     first_name: firstName,
                     last_name: lastName,
@@ -100,7 +96,8 @@ export default function RegisterForm({ onLoginSuccess }) {
                     terms_of_agreement: terms
                 });
 
-                const response = await fetch(`${apiUrl}/v1/auth/register`, {
+                // Register the user
+                const registerResponse = await fetch(`${apiUrl}/v1/auth/register`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -112,20 +109,29 @@ export default function RegisterForm({ onLoginSuccess }) {
                         password,
                         terms_of_agreement: terms,
                     }),
-                    mode: 'cors',           // Added för att kringå browserns motstånd mot mina SSL certifikat
-                    credentials: 'include'  // Added för att kringå browserns motstånd mot mina SSL certifikat
+                    mode: 'cors',
+                    credentials: 'include'
                 });
 
-                const errorData = await response.json();
-                if (!response.ok) {
-                    console.log("Validation error:", errorData);
-                    throw new Error(JSON.stringify(errorData));
+                const registerData = await registerResponse.json();
+
+                if (!registerResponse.ok) {
+                    console.log("Validation error:", registerData);
+
+                    // Check for the specific email already registered error
+                    if (registerData.detail && registerData.detail === "Email already registered.") {
+                        setEmailError(["E-postadressen används redan"]);
+                        document.getElementById("email").focus();
+                        return;
+                    } else {
+                        throw new Error(JSON.stringify(registerData));
+                    }
                 }
 
-                console.log("Success", errorData);
+                console.log("Registration successful:", registerData);
                 setServerError("");
 
-                // If registration successful, immediately log them in
+                // After successful registration, log the user in
                 const formData = new URLSearchParams();
                 formData.append('username', email);  // Note: 'username' not 'email'
                 formData.append('password', password);
@@ -135,44 +141,52 @@ export default function RegisterForm({ onLoginSuccess }) {
                     headers: {
                         "Content-Type": "application/x-www-form-urlencoded",
                     },
-                    body: formData
+                    body: formData,
+                    mode: 'cors',
+                    credentials: 'include'
                 });
 
+                // Process the login response
+                if (!loginResponse.ok) {
+                    const loginError = await loginResponse.json();
+                    throw new Error(JSON.stringify(loginError));
+                }
 
+                // Parse the login response data
+                const loginData = await loginResponse.json();
+                console.log("Login successful:", loginData);
 
+                // Save the token to localStorage
+                localStorage.setItem("access_token", loginData.access_token);
 
-                // const loginData = await loginResponse.json();
-                // if (!loginResponse.ok) {
-                //     throw new Error(JSON.stringify(loginData));
-                // }
-
-                // Success case - use the data from login response
+                // Call onLoginSuccess with user data from the login response
                 onLoginSuccess({
-                    firstName: firstName,  // Use the input values since API doesn't return user data
-                    lastName: lastName,
+                    firstName: loginData.first_name,
+                    lastName: loginData.last_name,
+                    isAdmin: loginData.is_admin,
+                    isPartner: loginData.is_partner,
                     userId: "authenticated"
                 });
 
             } catch (error) {
-                console.log("Full error:", error);
+                console.error("Full error:", error);
                 setServerError(error.message);
             }
         } else {
-            console.log(firstNameError);
-            console.log(lastNameError);
-            console.log(passwordError);
-            console.log(emailError);
-            console.log(termsError);
-            console.log("Error in form");
+            console.log("Form validation failed");
+            console.log("First name errors:", firstNameError);
+            console.log("Last name errors:", lastNameError);
+            console.log("Password errors:", passwordError);
+            console.log("Email errors:", emailError);
+            console.log("Terms error:", termsError);
         }
     }
 
-
     return (
         <>
-            <div className="flex flex-col justify-center flex-1 min-h-full px-6 py-12 lg:px-8">
+            <div className="flex flex-col justify-center flex-1 min-h-full px-6 py-6 lg:px-8">
                 <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-                    <h1 className="mt-5 text-3xl font-['Neucha'] tracking-tight text-center text-gray-900">
+                    <h1 className="mt-3 text-3xl font-['Neucha'] tracking-tight text-center text-gray-900">
                         Skapa ett konto
                     </h1>
                 </div>
@@ -190,15 +204,15 @@ export default function RegisterForm({ onLoginSuccess }) {
                                 <input
                                     id="firstName"
                                     name="firstName"
-                                    type="firstName"
-                                    autoComplete="First name"
-                                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                    type="text"
+                                    autoComplete="given-name"
+                                    className="block w-full rounded-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 font-['Barlow_Condensed']"
                                     value={firstName}
                                     onChange={(e) => setfirstName(e.target.value)}
                                     onBlur={validatefirstName}
                                 />
                                 {firstNameError.map((error) => (
-                                    <p key={error} className="text-red-500">
+                                    <p key={error} className="text-amber-700 text-sm">
                                         {error}
                                     </p>
                                 ))}
@@ -216,23 +230,20 @@ export default function RegisterForm({ onLoginSuccess }) {
                                 <input
                                     id="lastName"
                                     name="lastName"
-                                    type="lastName"
-                                    autoComplete="Last name"
-                                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                    type="text"
+                                    autoComplete="family-name"
+                                    className="block w-full rounded-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 font-['Barlow_Condensed']"
                                     value={lastName}
                                     onChange={(e) => setlastName(e.target.value)}
                                     onBlur={validatelastName}
                                 />
                                 {lastNameError.map((error) => (
-                                    <p key={error} className="text-red-500">
+                                    <p key={error} className="text-amber-700 text-sm">
                                         {error}
                                     </p>
                                 ))}
                             </div>
                         </div>
-
-
-
 
                         <div>
                             <label
@@ -247,13 +258,13 @@ export default function RegisterForm({ onLoginSuccess }) {
                                     name="email"
                                     type="email"
                                     autoComplete="email"
-                                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                    className="block w-full rounded-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 font-['Barlow_Condensed']"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     onBlur={validateEmail}
                                 />
                                 {emailError.map((error) => (
-                                    <p key={error} className="text-red-500">
+                                    <p key={error} className="text-amber-700 text-sm">
                                         {error}
                                     </p>
                                 ))}
@@ -268,29 +279,21 @@ export default function RegisterForm({ onLoginSuccess }) {
                                 >
                                     Lösenord
                                 </label>
-                                {/* <div className="text-sm"> */}
-                                {/* <a
-                                        href="#"
-                                        className="font-semibold text-indigo-600 hover:text-indigo-500"
-                                    >
-                                        Forgot password?
-                                    </a>
-                                </div> */}
                             </div>
                             <div className="mt-2">
                                 <input
                                     id="password"
                                     name="password"
                                     type="password"
-                                    autoComplete="current-password"
+                                    autoComplete="new-password"
                                     required
-                                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                    className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     onBlur={validatePassword}
                                 />
                                 {passwordError.map((error) => (
-                                    <p key={error} className="text-red-500">
+                                    <p key={error} className="text-amber-700 text-sm">
                                         {error}
                                     </p>
                                 ))}
@@ -316,18 +319,18 @@ export default function RegisterForm({ onLoginSuccess }) {
                                 />
                             </div>
                         </div>
-                        {termsError && <p className="italic text-red-500">{termsError}</p>}
+                        {termsError && <p className="text-amber-700 text-sm">{termsError}</p>}
 
                         <div>
                             <button
                                 type="submit"
-                                className="flex w-full justify-center font-['Neucha'] rounded-md bg-amber-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-amber-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-900"
+                                className="flex w-full justify-center font-['Neucha'] rounded-md bg-amber-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-amber-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-900"
                             >
                                 Skicka
                             </button>
                         </div>
                         {serverError && (
-                            <p className="mt-4 text-center text-red-500">{serverError}</p>
+                            <p className="mt-4 text-center text-amber-700 text-sm">{serverError}</p>
                         )}
                     </form>
                 </div>

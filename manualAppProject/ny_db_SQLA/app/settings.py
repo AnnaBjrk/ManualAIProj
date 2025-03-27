@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     S3_BUCKET: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     MISTRAL_API_KEY: str
+    STORAGE_MODE: str
+    LOCAL_UPLOAD_FOLDER: str
 
     model_config = SettingsConfigDict(
         env_file=str(env_path),

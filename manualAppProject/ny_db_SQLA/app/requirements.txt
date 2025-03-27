@@ -1,0 +1,37 @@
+# Web Framework & API
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+
+# Database
+sqlalchemy
+alembic
+psycopg2
+
+# AWS
+boto3
+botocore
+awscli
+
+# Authentication & Security
+python-jose
+passlib
+bcrypt
+python-multipart
+
+# Document Processing
+PyMuPDF
+pymupdf4llm
+easyocr
+opencv-python
+numpy
+
+# Text Processing & Detection
+langdetect
+
+# AI Services
+mistralai
+
+# Utilities
+python-dotenv

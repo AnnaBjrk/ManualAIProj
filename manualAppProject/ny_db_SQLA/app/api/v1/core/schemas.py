@@ -1,8 +1,8 @@
-# pydantic modeller ev ska vi lägga till en validation??
-
+# Addera fler schemas till endpoints som saknar
 from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
+from uuid import UUID
 
 
 class RegisterForm(BaseModel):
@@ -89,7 +89,7 @@ class TokenSchema(BaseModel):
 
 class UserOutSchema(BaseModel):
     """validates input in registerform"""
-    id: int
+    id: UUID
     email: str
     last_name: str
     first_name: str
@@ -107,7 +107,7 @@ class UserOutSchema(BaseModel):
 
 class UserResponse(BaseModel):
     """for endpoint that lists all users for the admin view, validates output"""
-    id: str
+    id: UUID
     first_name: str
     last_name: str
     is_admin: bool
@@ -140,3 +140,35 @@ class PartnerStatusUpdate(BaseModel):
 class DeleteStatusUpdate(BaseModel):
     """for the endpoint that sets the user delete field to true"""
     deleted: bool
+
+
+class DeleteManualRequest(BaseModel):
+    """for the partner function that marks or permanently deletes a manual from the database"""
+    file_id: int = Field(...,
+                         description="The ID of the manual file to delete")
+    hard_delete: bool = Field(
+        False, description="Whether to permanently delete or just hide the entry")
+
+
+class DeleteManualResponse(BaseModel):
+    """for response to deleting a manual - in partner table"""
+    success: bool
+    message: str
+
+
+class AddManualToUserListRequest(BaseModel):
+    file_id: UUID
+    users_own_naming: str
+
+
+class UserFileResponse(BaseModel):
+    file_id: str
+    users_own_naming: str
+    brand: str
+    device_type: str
+    model_numbers: str
+    remove_from_view: bool
+
+
+class UserFileListResponse(BaseModel):
+    files: List[UserFileResponse]

@@ -312,7 +312,7 @@ const AdminTableUsers = () => {
 
     return (
         <div className="container mx-auto px-4 py-8">
-            <h1 className="text-2xl font-black font-['Barlow_Condensed'] mb-6">Ändra behörigheter och ta bort användare</h1>
+            <h1 className="text-2xl font-black font-['Neucha'] mb-6">Ändra behörigheter och ta bort användare</h1>
 
             {/* Search Form */}
             <form onSubmit={handleSearch} className="mb-6 flex items-end">

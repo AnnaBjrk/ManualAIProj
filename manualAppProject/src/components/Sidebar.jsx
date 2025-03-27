@@ -18,11 +18,11 @@ export default function Sidebar({ isOpen, onClose, onLogin, onLogout, user }) {
 
   return (
     <div
-      className={`fixed inset-y-0 right-0 w-96 h-auto bg-amber-50 shadow-lg transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'
+      className={`fixed inset-y-0 right-0 w-96 h-full bg-amber-50 shadow-lg transform transition-transform duration-300 ease-in-out overflow-y-auto ${isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
     >
-      <div className="p-4">
-        <div className="flex justify-end">
+      <div className="p-4 overflow-y-auto max-h-full">
+        <div className="flex justify-end sticky top-0 bg-amber-50 z-10 py-2">
           <button
             onClick={onClose}
             className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
@@ -31,7 +31,7 @@ export default function Sidebar({ isOpen, onClose, onLogin, onLogout, user }) {
           </button>
         </div>
 
-        <div className="mt-8">
+        <div className="mt-8 overflow-y-auto">
           {user ? (
             <div className="flex flex-col items-center space-y-6">
               <div className="text-center">
@@ -55,8 +55,8 @@ export default function Sidebar({ isOpen, onClose, onLogin, onLogout, user }) {
                 <button
                   onClick={() => setShowLogin(false)}
                   className={`px-4 py-2 font-['Neucha'] rounded-md transition-colors ${!showLogin
-                    ? 'bg-amber-600 text-white'
-                    : 'bg-transparent text-amber-800 hover:bg-amber-7000'
+                      ? 'bg-amber-600 text-white'
+                      : 'bg-transparent text-amber-700 hover:bg-amber-700 hover:text-white'
                     }`}
                 >
                   Bli medlem
@@ -64,8 +64,8 @@ export default function Sidebar({ isOpen, onClose, onLogin, onLogout, user }) {
                 <button
                   onClick={() => setShowLogin(true)}
                   className={`px-4 py-2 font-['Neucha'] rounded-md transition-colors ${showLogin
-                    ? 'bg-amber-600 text-white'
-                    : 'bg-transparent text-amber-800 hover:bg-amber-700'
+                      ? 'bg-amber-600 text-white'
+                      : 'bg-transparent text-amber-700 hover:bg-amber-700 hover:text-white'
                     }`}
                 >
                   Logga in

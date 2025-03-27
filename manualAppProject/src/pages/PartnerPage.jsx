@@ -2,7 +2,8 @@ import React from "react";
 import cuteRob from "../assets/img/diskmPersp.jpg";
 import AdminManualsTable from "../components/AdminManualsTable";
 import StatisticPartnerManuals from "../components/StatisticPartnerManuals";
-StatisticPartnerManuals
+import UploadManual from "../components/UploadManual";
+
 
 export default function PartnerPage() {
 
@@ -16,6 +17,9 @@ export default function PartnerPage() {
             </div>
             <div>
                 <AdminManualsTable />
+            </div>
+            <div>
+                <UploadManual />
             </div>
 
             <p className="text-gray-700 font-['Barlow_Condensed'] leading-relaxed">
