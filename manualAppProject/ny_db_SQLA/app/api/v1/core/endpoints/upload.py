@@ -102,11 +102,12 @@ def upload_manual(
             result = store_document_s3(
                 file=file_obj,
                 filename=file.filename,
-                brand=brand.name,  # Use the actual string name
-                device_type=device_type.type,  # Use the actual string type
+                brand=brand.name,
+                device_type=device_type.type,
                 model=modelnumber,
                 bucket_name=S3_BUCKET,
-                region_name=AWS_REGION
+                region_name=AWS_REGION,
+                s3_client=s3_client  # Pass the injected S3 client
             )
 
         # Extract results

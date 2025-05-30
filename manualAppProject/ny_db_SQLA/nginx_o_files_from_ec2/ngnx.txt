@@ -1,0 +1,50 @@
+Core Configuration Files
+
+/etc/nginx/nginx.conf - The main configuration file that contains global settings and includes other configuration files
+klar
+
+
+
+/etc/nginx/sites-available/ - Directory for individual site configurations
+sparad
+
+Create a file like example.com or myapp for each site/application
+
+
+/etc/nginx/sites-enabled/ - Directory containing symbolic links to enabled configurations
+klar
+Create symlinks from sites-available using ln -s /etc/nginx/sites-available/mysite /etc/nginx/sites-enabled/
+
+
+/etc/nginx/conf.d/ - Alternative directory for configuration files (used in some distributions)
+
+Files here typically end with .conf extension
+
+
+
+Optional Files
+
+/etc/nginx/mime.types - Maps file extensions to MIME types
+/var/log/nginx/ - Directory where log files are stored
+
+access.log - Records all requests
+error.log - Records errors and diagnostic information
+
+
+/etc/nginx/fastcgi_params or /etc/nginx/uwsgi_params - If using PHP-FPM or uWSGI
+/etc/nginx/snippets/ - For reusable configuration snippets (SSL configurations, etc.)
+
+Security Files
+
+/etc/ssl/certs/ and /etc/ssl/private/ - For SSL certificates if you're setting up HTTPS
+/etc/nginx/.htpasswd - If using basic authentication
+
+Basic Setup Process
+
+Install Nginx: sudo apt update && sudo apt install nginx
+Create your site configuration in sites-available
+Enable it with a symlink to sites-enabled
+Test the configuration: sudo nginx -t
+Restart Nginx: sudo systemctl restart nginx
+
+Would you like me to provide a sample configuration file for a specific use case?

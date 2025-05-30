@@ -1,6 +1,7 @@
 # app/seeds.py
 import logging
 from sqlalchemy.orm import Session
+
 from app.api.v1.core.models import DeviceTypes, Brands
 
 
@@ -24,13 +25,15 @@ def seed_initial_data(db: Session):
         ]
 
         # Check if device types already exist
-        existing_device_types = db.query(DeviceTypes.name).all()
+        # Using 'type' instead of 'name'
+        existing_device_types = db.query(DeviceTypes.type).all()
         existing_device_types = [d[0] for d in existing_device_types]
 
         # Add only device types that don't already exist
         for device_type in device_types:
             if device_type not in existing_device_types:
-                db.add(DeviceTypes(name=device_type))
+                # Using 'type' instead of 'name'
+                db.add(DeviceTypes(type=device_type))
 
         # Seed Brands
         brands = [

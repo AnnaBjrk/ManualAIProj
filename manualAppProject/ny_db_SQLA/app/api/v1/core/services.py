@@ -3,7 +3,7 @@ import re
 import easyocr
 import cv2
 import numpy as np
-from .models import Manuals
+from app.api.v1.core.models import Manuals
 from difflib import SequenceMatcher
 from sqlalchemy import select, or_
 from sqlalchemy.orm import Session

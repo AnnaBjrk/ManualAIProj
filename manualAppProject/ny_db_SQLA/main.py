@@ -22,6 +22,12 @@ async def lifespan(app: FastAPI):
 
 # lifespan är en funktion som initierar databasen när app startar
 app = FastAPI(lifespan=lifespan)
+
+
+@app.get("/")
+async def read_root():
+    return {"message": "API is running!"}
+
 app.include_router(router, prefix="/v1", tags=["v1"])
 # both routers -upload and genral are imported with this, no separate needed
 

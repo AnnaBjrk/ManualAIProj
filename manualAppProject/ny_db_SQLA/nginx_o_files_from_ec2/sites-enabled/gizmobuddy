@@ -1,0 +1,30 @@
+server {
+    listen 80;
+    server_name gizmobuddy.online;
+    
+    # Redirect all HTTP traffic to HTTPS
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name gizmobuddy.online;
+    client_max_body_size 50M;    
+    # SSL configuration (already managed by Certbot)
+    ssl_certificate /etc/letsencrypt/live/gizmobuddy.online/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/gizmobuddy.online/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    
+    location / {
+        proxy_pass http://localhost:8000;  # Update to the port your Docker container will use
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 300;
+        proxy_send_timeout 300; 
+        proxy_read_timeout 300;
+        send_timeout 300;
+    }
+}

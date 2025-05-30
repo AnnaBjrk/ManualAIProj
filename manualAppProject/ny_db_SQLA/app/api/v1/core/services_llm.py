@@ -33,7 +33,7 @@ import fitz  # PyMuPDF's import name
 import pymupdf4llm
 from langdetect import detect_langs
 from langdetect import DetectorFactory
-from exceptions import LanguageError
+from app.exceptions import LanguageError
 import io
 
 # Or load from bytes (e.g., from S3)

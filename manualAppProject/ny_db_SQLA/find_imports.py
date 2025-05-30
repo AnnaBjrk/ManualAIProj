@@ -2,6 +2,9 @@ import os
 import re
 import sys
 
+# python3 find_imports.py . om du står i directory
+# python3 find_imports.py /path/to/your/project
+
 
 def find_imports(directory='.'):
     imports = set()

@@ -1,8 +1,6 @@
 
 from mistralai import Mistral
 from app.settings import settings
-from .models import Manuals
-from fastapi import HTTPException
 
 
 # fixa så att denna funkar med båda endpoints både den som hämtar manualen direkt och den som kör en
